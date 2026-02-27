@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="frontend/frontend.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="RacMonsters.AppHost/RacMonsters.AppHost.csproj" />
+  <Project Path="RacMonsters.Server/RacMonsters.Server.csproj" />
+</Solution>
