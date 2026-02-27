@@ -12,6 +12,7 @@ export default function App() {
   const mounted = useRef(true)
   const [player, setPlayer] = useState<any | null>(null)
   const [enemy, setEnemy] = useState<any | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   useEffect(() => {
     mounted.current = true
@@ -26,101 +27,129 @@ export default function App() {
 
   const pushLog = (s: string) => setLog(l => [s, ...l].slice(0, 6))
 
-  // Fetch characters from backend
+  // Create a session on load
   useEffect(() => {
-    const load = async () => {
+    const start = async () => {
       try {
-        const res = await fetch('/api/characters')
+        const res = await fetch('/api/battle/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
         const data = await res.json()
-        if (Array.isArray(data) && data.length >= 2) {
-          setPlayer(data[0])
-          setEnemy(data[1])
-          setPlayerHP(data[0].health)
-          setEnemyHP(data[1].health)
-          pushLog('Battleants ready')
+        if (data?.sessionId && Array.isArray(data.characters) && data.characters.length >= 2) {
+          setSessionId(data.sessionId)
+          setPlayer(data.characters[0])
+          setEnemy(data.characters[1])
+          setPlayerHP(data.characters[0].health)
+          setEnemyHP(data.characters[1].health)
+          pushLog('Battle session started')
+        } else {
+          pushLog('Failed to start session')
         }
       } catch (e) {
-        pushLog('Failed to load characters')
+        pushLog('Failed to start session')
       }
     }
-    load()
+    start()
   }, [])
 
-  const postAttack = async (attackerId: number, defenderId: number, abilityIndex: number | null) => {
-    const body = { attackerId: attackerId, defenderId: defenderId, abilityIndex: abilityIndex }
-    const res = await fetch('/api/battle/attack', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const postAction = async (actorId: number, action: string, targetId: number | null, abilityIndex: number | null) => {
+    if (!sessionId) throw new Error('no session')
+    const body = { actorId: actorId, action: action, targetId: targetId, abilityIndex: abilityIndex }
+    const res = await fetch(`/api/battle/session/${sessionId}/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     return res.json()
   }
 
-  const postHeal = async (targetId: number) => {
-    const body = { targetId }
-    const res = await fetch('/api/battle/heal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    return res.json()
-  }
-
-  const enemyTurn = async () => {
-    if (!player || !enemy || (enemyHP ?? 0) <= 0 || (playerHP ?? 0) <= 0) return
-    setBusy(true)
-    await new Promise(r => setTimeout(r, 500))
-    // enemy chooses random ability or basic
-    const choice = Math.random() > 0.6 ? 1 : null
-    const result = await postAttack(enemy.id, player.id, choice)
-    setPlayerHP(result.defenderHp)
-    pushLog(result.message)
-    setPlayerAnim('hit')
-    setTimeout(() => setPlayerAnim(null), 500)
-    setBusy(false)
-  }
-
-  const playerAttack = async () => {
+  const doPlayerAttack = async (abilityIndex: number | null) => {
     if (busy || !player || !enemy) return
     setBusy(true)
-    const result = await postAttack(player.id, enemy.id, null)
-    setEnemyHP(result.defenderHp)
-    pushLog(result.message)
-    setEnemyAnim('hit')
-    setTimeout(() => setEnemyAnim(null), 500)
-    if ((result.defenderHp ?? 0) > 0) await enemyTurn()
-    setBusy(false)
-  }
+    const result = await postAction(player.id, 'attack', enemy.id, abilityIndex)
+    // result: { characters: [...], messages: [...] }
+    if (result?.characters) {
+      const chars = result.characters
+      // assume first is player and second is enemy as before
+      const p = chars.find((c: any) => c.id === player.id) ?? chars[0]
+      const e = chars.find((c: any) => c.id === enemy.id) ?? chars[1]
+      setPlayer(p)
+      setEnemy(e)
+      setPlayerHP(p.health)
+      setEnemyHP(e.health)
+    }
+    if (result?.events) {
+      // add formatted messages from events (player action first, then AI)
+      result.events.forEach((ev: any) => {
+        let m = ''
+        if (ev.action === 'attack') {
+          m = ev.abilityName ? `${ev.actorName} used ${ev.abilityName} and dealt ${ev.damage} damage to ${ev.targetName}.` : `${ev.actorName} hits ${ev.targetName} for ${ev.damage} damage.`
+        } else if (ev.action === 'heal') {
+          m = `${ev.actorName} healed ${ev.targetName} for ${ev.heal} HP.`
+        } else {
+          m = `${ev.actorName} ${ev.action}`
+        }
+        pushLog(m)
+      })
 
-  const playerSpecial = async () => {
-    if (busy || !player || !enemy) return
-    setBusy(true)
-    // use ability index 1 if available
-    const idx = player.abilities && player.abilities.length > 1 ? 1 : null
-    const result = await postAttack(player.id, enemy.id, idx)
-    setEnemyHP(result.defenderHp)
-    pushLog(result.message)
-    setEnemyAnim('big-hit')
-    setTimeout(() => setEnemyAnim(null), 700)
-    if ((result.defenderHp ?? 0) > 0) await enemyTurn()
+      // animations: first event is player's action
+      const first = result.events[0]
+      if (first) {
+        setEnemyAnim(first.action === 'attack' && first.abilityName ? 'big-hit' : 'hit')
+        setTimeout(() => setEnemyAnim(null), first.action === 'attack' && first.abilityName ? 700 : 500)
+      }
+      // second event (if any) is AI response
+      if (result.events.length > 1) {
+        const ai = result.events[1]
+        setPlayerAnim(ai.action === 'attack' && ai.abilityName ? 'big-hit' : 'hit')
+        setTimeout(() => setPlayerAnim(null), ai.action === 'attack' && ai.abilityName ? 700 : 500)
+      }
+    }
     setBusy(false)
   }
 
   const playerHeal = async () => {
     if (busy || !player) return
     setBusy(true)
-    const result = await postHeal(player.id)
-    setPlayerHP(result.defenderHp ?? result.currentHp ?? playerHP)
-    pushLog(result.message)
-    setPlayerAnim('heal')
-    setTimeout(() => setPlayerAnim(null), 700)
-    // enemy still takes a turn
-    await enemyTurn()
+    const result = await postAction(player.id, 'heal', player.id, null)
+    if (result?.characters) {
+      const chars = result.characters
+      const p = chars.find((c: any) => c.id === player.id) ?? chars[0]
+      const e = chars.find((c: any) => c.id === enemy.id) ?? chars[1]
+      setPlayer(p)
+      setEnemy(e)
+      setPlayerHP(p.health)
+      setEnemyHP(e.health)
+    }
+    if (result?.events) {
+      result.events.forEach((ev: any) => {
+        let m = ''
+        if (ev.action === 'attack') {
+          m = ev.abilityName ? `${ev.actorName} used ${ev.abilityName} and dealt ${ev.damage} damage to ${ev.targetName}.` : `${ev.actorName} hits ${ev.targetName} for ${ev.damage} damage.`
+        } else if (ev.action === 'heal') {
+          m = `${ev.actorName} healed ${ev.targetName} for ${ev.heal} HP.`
+        } else {
+          m = `${ev.actorName} ${ev.action}`
+        }
+        pushLog(m)
+      })
+      // show heal animation for player action
+      setPlayerAnim('heal')
+      setTimeout(() => setPlayerAnim(null), 700)
+      if (result.events.length > 1) {
+        const ai = result.events[1]
+        setPlayerAnim(ai.action === 'attack' && ai.abilityName ? 'big-hit' : 'hit')
+        setTimeout(() => setPlayerAnim(null), ai.action === 'attack' && ai.abilityName ? 700 : 500)
+      }
+    }
     setBusy(false)
   }
 
   const reset = async () => {
-    // reload characters from server
+    // create a new session
     try {
-      const res = await fetch('/api/characters')
+      const res = await fetch('/api/battle/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
       const data = await res.json()
-      if (Array.isArray(data) && data.length >= 2) {
-        setPlayer(data[0])
-        setEnemy(data[1])
-        setPlayerHP(data[0].health)
-        setEnemyHP(data[1].health)
+      if (data?.sessionId && Array.isArray(data.characters) && data.characters.length >= 2) {
+        setSessionId(data.sessionId)
+        setPlayer(data.characters[0])
+        setEnemy(data.characters[1])
+        setPlayerHP(data.characters[0].health)
+        setEnemyHP(data.characters[1].health)
         setLog(['A new battle begins!'])
       }
     } catch {
@@ -176,6 +205,12 @@ export default function App() {
                   </div>
                   <div className="hp-text">{playerHP ?? '--'} / {player?.maxHealth ?? 100}</div>
                 </div>
+                <div className="stats">
+                  <div>ATK: {player?.attack ?? '--'}</div>
+                  <div>DEF: {player?.defense ?? '--'}</div>
+                  <div>MATK: {player?.techAttack ?? '--'}</div>
+                  <div>MDEF: {player?.techDefense ?? '--'}</div>
+                </div>
               </div>
             </div>
 
@@ -200,18 +235,26 @@ export default function App() {
                   </div>
                   <div className="hp-text">{enemyHP ?? '--'} / {enemy?.maxHealth ?? 100}</div>
                 </div>
+                <div className="stats">
+                  <div>ATK: {enemy?.attack ?? '--'}</div>
+                  <div>DEF: {enemy?.defense ?? '--'}</div>
+                  <div>MATK: {enemy?.techAttack ?? '--'}</div>
+                  <div>MDEF: {enemy?.techDefense ?? '--'}</div>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="controls">
             <div className="actions">
-              <button className="btn attack" onClick={playerAttack} disabled={busy || battleOver} aria-label="Attack">
+              <button className="btn attack" onClick={() => doPlayerAttack(null)} disabled={busy || battleOver} aria-label="Attack">
                 Attack
               </button>
-              <button className="btn special" onClick={playerSpecial} disabled={busy || battleOver} aria-label="Special Attack">
-                Special
-              </button>
+              {player?.abilities && player.abilities.map((a: any, i: number) => (
+                <button key={i} className="btn ability" onClick={() => doPlayerAttack(i)} disabled={busy || battleOver} aria-label={`Use ${a.name}`}>
+                  {a.name} {a.power ? `(${a.power})` : ''}
+                </button>
+              ))}
               <button className="btn heal" onClick={playerHeal} disabled={busy || battleOver} aria-label="Heal">
                 Heal
               </button>
