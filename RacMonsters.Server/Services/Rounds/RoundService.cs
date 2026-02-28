@@ -1,4 +1,5 @@
-﻿using RacMonsters.Server.Repositories.Actions;
+﻿using RacMonsters.Server.Models;
+using RacMonsters.Server.Repositories.Rounds;
 
 namespace RacMonsters.Server.Services.Rounds
 {
@@ -9,6 +10,11 @@ namespace RacMonsters.Server.Services.Rounds
         public RoundService(IRoundRepository roundRepository)
         {
             _roundRepository = roundRepository;
+        }
+        
+        public async Task<Round> ExecuteRound(Round r)
+        {
+            return await _roundRepository.ExecuteRound(r);
         }
     }
 }

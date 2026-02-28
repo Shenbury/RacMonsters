@@ -3,6 +3,7 @@
     public class Session
     {
         public int Id { get; set; }
-        public Battle[] Battles { get; set; }
+        // battles contained in this session
+        public Battle[] Battles { get; set; } = Array.Empty<Battle>();
     }
 }

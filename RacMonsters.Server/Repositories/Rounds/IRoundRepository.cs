@@ -1,10 +1,10 @@
 ﻿using RacMonsters.Server.Models;
 
-namespace RacMonsters.Server.Repositories.Actions
+namespace RacMonsters.Server.Repositories.Rounds
 {
     public interface IRoundRepository
     {
         Task<Round[]> GetRounds(int[] roundIds);
-        public Task<Round> ExecuteRound(Round executeRound);
+        Task<Round> ExecuteRound(Round executeRound);
     }
 }

@@ -1,3 +1,4 @@
+using RacMonsters.Server.Models;
 using RacMonsters.Server.Services.Sessions;
 
 namespace RacMonsters.Server.Endpoints;
@@ -6,16 +7,16 @@ public static class SessionEndpoints
 {
     public static void MapSessionEndpoints(this RouteGroupBuilder api)
     {
-        api.MapPost("session/create", async (ISessionService svc) =>
+        api.MapPost("session/create", async (Session session, ISessionService svc) =>
         {
-            var res = svc.CreateSession(req ?? new CreateSessionRequest(null));
+            var res = await svc.CreateSession(session);
             return Results.Ok(res);
         });
 
-        api.MapGet("session/{id}", (int id, ISessionService svc) =>
+        api.MapGet("session/{id}", async (int id, ISessionService svc) =>
         {
-            var ch = svc.GetAll().FirstOrDefault(c => c.Id == id);
-            return ch is null ? Results.NotFound() : Results.Ok(ch);
+            var s = await svc.GetSession(id);
+            return s is null ? Results.NotFound() : Results.Ok(s);
         });
     }
 }

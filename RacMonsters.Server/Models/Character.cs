@@ -9,7 +9,8 @@ public class Character
     public int CurrentHealth { get; set; }
     public int MaxHealth { get; init; }
 
-    public Ability[] Abilities { get; init; } = [];
+    // abilities available to this character
+    public Ability[] Abilities { get; init; } = Array.Empty<Ability>();
 
     public int Attack { get; init; }
     public int Defense { get; init; }

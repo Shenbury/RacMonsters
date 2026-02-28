@@ -3,7 +3,8 @@
     public class Round
     {
         public int Id { get; set; }
-        public (Character CharacterA, Ability AbilityA) PlayerA { get; set; }
-        public (Character CharacterB, Ability AbilityB) PlayerB { get; set; }
+        // actions chosen by both participants in this round
+        public RoundAction PlayerA { get; set; } = new RoundAction();
+        public RoundAction PlayerB { get; set; } = new RoundAction();
     }
 }

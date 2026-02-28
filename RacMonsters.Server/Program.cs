@@ -1,5 +1,15 @@
 using RacMonsters.Server.Models;
 using RacMonsters.Server.Services;
+using RacMonsters.Server.Repositories.Characters;
+using RacMonsters.Server.Repositories.Abilities;
+using RacMonsters.Server.Repositories.Battles;
+using RacMonsters.Server.Repositories.Sessions;
+using RacMonsters.Server.Repositories.Rounds;
+using RacMonsters.Server.Services.Characters;
+using RacMonsters.Server.Services.Abilities;
+using RacMonsters.Server.Services.Battles;
+using RacMonsters.Server.Services.Sessions;
+using RacMonsters.Server.Services.Rounds;
 using RacMonsters.Server.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +24,19 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 // Register character loader service
+// repositories
+builder.Services.AddSingleton<ICharacterRepository, CharacterRepository>();
+builder.Services.AddSingleton<IAbilityRepository, AbilityRepository>();
+builder.Services.AddSingleton<IBattleRepository, BattleRepository>();
+builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
+builder.Services.AddSingleton<IRoundRepository, RoundRepository>();
+
+// services
 builder.Services.AddSingleton<ICharacterService, CharacterService>();
+builder.Services.AddSingleton<IAbilityService, AbilityService>();
 builder.Services.AddSingleton<IBattleService, BattleService>();
+builder.Services.AddSingleton<ISessionService, SessionService>();
+builder.Services.AddSingleton<IRoundService, RoundService>();
 
 var app = builder.Build();
 
@@ -32,6 +53,9 @@ var api = app.MapGroup("/api");
 // register endpoints in extension classes
 api.MapCharacterEndpoints();
 api.MapBattleEndpoints();
+api.MapAbilityEndpoints();
+api.MapSessionEndpoints();
+api.MapRoundEndpoints();
 
 app.MapDefaultEndpoints();
 

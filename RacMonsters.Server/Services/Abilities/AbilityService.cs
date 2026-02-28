@@ -1,4 +1,5 @@
 ﻿using RacMonsters.Server.Repositories.Abilities;
+using RacMonsters.Server.Models;
 
 namespace RacMonsters.Server.Services.Abilities
 {
@@ -9,6 +10,11 @@ namespace RacMonsters.Server.Services.Abilities
         public AbilityService(IAbilityRepository abilityRepository)
         {
             _abilityRepository = abilityRepository;
+        }
+
+        public async Task<Ability[]> GetAbilities(int[] ids)
+        {
+            return await _abilityRepository.GetAbilities(ids);
         }
     }
 }

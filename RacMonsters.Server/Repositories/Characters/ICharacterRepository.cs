@@ -6,5 +6,6 @@ namespace RacMonsters.Server.Repositories.Characters
     {
         Task<Character> GetRandomCharacter();
         Task<Character> GetCharacter(int id);
+        Task<Character[]> GetAll();
     }
 }
