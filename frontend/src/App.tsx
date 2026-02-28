@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 export default function App() {
@@ -12,7 +12,6 @@ export default function App() {
   const mounted = useRef(true)
   const [player, setPlayer] = useState<any | null>(null)
   const [enemy, setEnemy] = useState<any | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(null)
 
   useEffect(() => {
     mounted.current = true
@@ -27,129 +26,167 @@ export default function App() {
 
   const pushLog = (s: string) => setLog(l => [s, ...l].slice(0, 6))
 
-  // Create a session on load
+  // Initialize a battle on load: fetch characters and create a battle
   useEffect(() => {
     const start = async () => {
       try {
-        const res = await fetch('/api/battle/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-        const data = await res.json()
-        if (data?.sessionId && Array.isArray(data.characters) && data.characters.length >= 2) {
-          setSessionId(data.sessionId)
-          setPlayer(data.characters[0])
-          setEnemy(data.characters[1])
-          setPlayerHP(data.characters[0].health)
-          setEnemyHP(data.characters[1].health)
-          pushLog('Battle session started')
+        const res = await fetch('/api/characters')
+        const chars = await res.json()
+        if (Array.isArray(chars) && chars.length >= 2) {
+          // pick first two (very dumb)
+          const p = chars[0]
+          const e = chars[1]
+
+          setPlayer(p)
+          setEnemy(e)
+          setPlayerHP(p.currentHealth ?? p.currentHealth ?? p.currentHealth ?? (p.maxHealth ?? 100))
+          setEnemyHP(e.currentHealth ?? (e.maxHealth ?? 100))
+
+          // create a battle record on the server (server will accept full models)
+          try {
+            await fetch('/api/battle/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ characterA: p, characterB: e, rounds: [] }) })
+            pushLog('Battle created on server')
+          } catch {
+            pushLog('Created local battle (server create failed)')
+          }
         } else {
-          pushLog('Failed to start session')
+          pushLog('Failed to load characters')
         }
       } catch (e) {
-        pushLog('Failed to start session')
+        pushLog('Failed to load characters')
       }
     }
     start()
   }, [])
 
-  const postAction = async (actorId: number, action: string, targetId: number | null, abilityIndex: number | null) => {
-    if (!sessionId) throw new Error('no session')
-    const body = { actorId: actorId, action: action, targetId: targetId, abilityIndex: abilityIndex }
-    const res = await fetch(`/api/battle/session/${sessionId}/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  // Post a round to the backend. The backend will choose AI move and resolve.
+  const postRound = async (round: any) => {
+    const res = await fetch('/api/round/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(round) })
     return res.json()
   }
 
   const doPlayerAttack = async (abilityIndex: number | null) => {
     if (busy || !player || !enemy) return
     setBusy(true)
-    const result = await postAction(player.id, 'attack', enemy.id, abilityIndex)
-    // result: { characters: [...], messages: [...] }
-    if (result?.characters) {
-      const chars = result.characters
-      // assume first is player and second is enemy as before
-      const p = chars.find((c: any) => c.id === player.id) ?? chars[0]
-      const e = chars.find((c: any) => c.id === enemy.id) ?? chars[1]
-      setPlayer(p)
-      setEnemy(e)
-      setPlayerHP(p.health)
-      setEnemyHP(e.health)
-    }
-    if (result?.events) {
-      // add formatted messages from events (player action first, then AI)
-      result.events.forEach((ev: any) => {
-        let m = ''
-        if (ev.action === 'attack') {
-          m = ev.abilityName ? `${ev.actorName} used ${ev.abilityName} and dealt ${ev.damage} damage to ${ev.targetName}.` : `${ev.actorName} hits ${ev.targetName} for ${ev.damage} damage.`
-        } else if (ev.action === 'heal') {
-          m = `${ev.actorName} healed ${ev.targetName} for ${ev.heal} HP.`
-        } else {
-          m = `${ev.actorName} ${ev.action}`
-        }
-        pushLog(m)
-      })
 
-      // animations: first event is player's action
-      const first = result.events[0]
-      if (first) {
-        setEnemyAnim(first.action === 'attack' && first.abilityName ? 'big-hit' : 'hit')
-        setTimeout(() => setEnemyAnim(null), first.action === 'attack' && first.abilityName ? 700 : 500)
+    // pick ability (if null, choose first ability)
+    const playerAbility = abilityIndex != null ? player.abilities[abilityIndex] : (player.abilities && player.abilities[0])
+    if (!playerAbility) {
+      pushLog('No ability available')
+      setBusy(false)
+      return
+    }
+
+    // prepare round: include PlayerA (player + chosen ability) and PlayerB character (enemy); AI ability left null
+    const round = {
+      playerA: { character: player, ability: playerAbility },
+      playerB: { character: enemy, ability: null }
+    }
+
+    // store old hp to compute damage/heal
+    const oldPlayerHP = playerHP ?? (player.maxHealth ?? 100)
+    const oldEnemyHP = enemyHP ?? (enemy.maxHealth ?? 100)
+
+    const result = await postRound(round)
+
+    // result is the executed Round with updated characters
+    if (result) {
+      const updatedPlayer = result.playerA?.character ?? player
+      const updatedEnemy = result.playerB?.character ?? enemy
+
+      const newPlayerHP = updatedPlayer.currentHealth ?? updatedPlayer.currentHealth ?? (updatedPlayer.maxHealth ?? 100)
+      const newEnemyHP = updatedEnemy.currentHealth ?? (updatedEnemy.maxHealth ?? 100)
+
+      // compute differences
+      const playerDelta = newPlayerHP - oldPlayerHP
+      const enemyDelta = oldEnemyHP - newEnemyHP
+
+      setPlayer(updatedPlayer)
+      setEnemy(updatedEnemy)
+      setPlayerHP(newPlayerHP)
+      setEnemyHP(newEnemyHP)
+
+      // messages
+      pushLog(`${player.name} used ${playerAbility.name}.`)
+      if (enemyDelta > 0) pushLog(`${enemy.name} took ${enemyDelta} damage.`)
+      if (enemyDelta <= 0) pushLog(`${enemy.name} took no damage.`)
+
+      // AI action (if present)
+      const aiUsed = result.playerB?.ability
+      if (aiUsed) {
+        pushLog(`${enemy.name} used ${aiUsed.name}.`)
+        if (playerDelta > 0) pushLog(`${player.name} healed ${playerDelta} HP.`)
+        if (playerDelta < 0) pushLog(`${player.name} took ${-playerDelta} damage.`)
       }
-      // second event (if any) is AI response
-      if (result.events.length > 1) {
-        const ai = result.events[1]
-        setPlayerAnim(ai.action === 'attack' && ai.abilityName ? 'big-hit' : 'hit')
-        setTimeout(() => setPlayerAnim(null), ai.action === 'attack' && ai.abilityName ? 700 : 500)
+
+      // animations: quick naive mapping
+      setEnemyAnim('hit')
+      setTimeout(() => setEnemyAnim(null), 500)
+      if (aiUsed) {
+        setPlayerAnim('hit')
+        setTimeout(() => setPlayerAnim(null), 500)
       }
     }
+
     setBusy(false)
   }
 
   const playerHeal = async () => {
-    if (busy || !player) return
+    if (busy || !player || !enemy) return
     setBusy(true)
-    const result = await postAction(player.id, 'heal', player.id, null)
-    if (result?.characters) {
-      const chars = result.characters
-      const p = chars.find((c: any) => c.id === player.id) ?? chars[0]
-      const e = chars.find((c: any) => c.id === enemy.id) ?? chars[1]
-      setPlayer(p)
-      setEnemy(e)
-      setPlayerHP(p.health)
-      setEnemyHP(e.health)
+
+    const healAbility = player.abilities?.find((a: any) => a.isHeal)
+    if (!healAbility) {
+      pushLog('No heal available')
+      setBusy(false)
+      return
     }
-    if (result?.events) {
-      result.events.forEach((ev: any) => {
-        let m = ''
-        if (ev.action === 'attack') {
-          m = ev.abilityName ? `${ev.actorName} used ${ev.abilityName} and dealt ${ev.damage} damage to ${ev.targetName}.` : `${ev.actorName} hits ${ev.targetName} for ${ev.damage} damage.`
-        } else if (ev.action === 'heal') {
-          m = `${ev.actorName} healed ${ev.targetName} for ${ev.heal} HP.`
-        } else {
-          m = `${ev.actorName} ${ev.action}`
-        }
-        pushLog(m)
-      })
-      // show heal animation for player action
+
+    const oldPlayerHP = playerHP ?? (player.maxHealth ?? 100)
+    const round = {
+      playerA: { character: player, ability: healAbility },
+      playerB: { character: enemy, ability: null }
+    }
+
+    const result = await postRound(round)
+    if (result) {
+      const updatedPlayer = result.playerA?.character ?? player
+      const updatedEnemy = result.playerB?.character ?? enemy
+      const newPlayerHP = updatedPlayer.currentHealth ?? (updatedPlayer.maxHealth ?? 100)
+      const newEnemyHP = updatedEnemy.currentHealth ?? (updatedEnemy.maxHealth ?? 100)
+
+      setPlayer(updatedPlayer)
+      setEnemy(updatedEnemy)
+      setPlayerHP(newPlayerHP)
+      setEnemyHP(newEnemyHP)
+
+      const playerDelta = newPlayerHP - oldPlayerHP
+      pushLog(`${player.name} used ${healAbility.name}.`)
+      if (playerDelta > 0) pushLog(`${player.name} healed ${playerDelta} HP.`)
+
+      // AI action
+      const aiUsed = result.playerB?.ability
+      if (aiUsed) {
+        pushLog(`${enemy.name} used ${aiUsed.name}.`)
+      }
+
       setPlayerAnim('heal')
       setTimeout(() => setPlayerAnim(null), 700)
-      if (result.events.length > 1) {
-        const ai = result.events[1]
-        setPlayerAnim(ai.action === 'attack' && ai.abilityName ? 'big-hit' : 'hit')
-        setTimeout(() => setPlayerAnim(null), ai.action === 'attack' && ai.abilityName ? 700 : 500)
-      }
     }
     setBusy(false)
   }
 
   const reset = async () => {
-    // create a new session
     try {
-      const res = await fetch('/api/battle/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-      const data = await res.json()
-      if (data?.sessionId && Array.isArray(data.characters) && data.characters.length >= 2) {
-        setSessionId(data.sessionId)
-        setPlayer(data.characters[0])
-        setEnemy(data.characters[1])
-        setPlayerHP(data.characters[0].health)
-        setEnemyHP(data.characters[1].health)
+      const res = await fetch('/api/characters')
+      const chars = await res.json()
+      if (Array.isArray(chars) && chars.length >= 2) {
+        const p = chars[0]
+        const e = chars[1]
+        setPlayer(p)
+        setEnemy(e)
+        setPlayerHP(p.currentHealth ?? (p.maxHealth ?? 100))
+        setEnemyHP(e.currentHealth ?? (e.maxHealth ?? 100))
         setLog(['A new battle begins!'])
       }
     } catch {

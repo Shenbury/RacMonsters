@@ -11,6 +11,7 @@ using RacMonsters.Server.Services.Battles;
 using RacMonsters.Server.Services.Sessions;
 using RacMonsters.Server.Services.Rounds;
 using RacMonsters.Server.Endpoints;
+using RacMonsters.Server.Services.AIs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,7 @@ builder.Services.AddSingleton<IAbilityService, AbilityService>();
 builder.Services.AddSingleton<IBattleService, BattleService>();
 builder.Services.AddSingleton<ISessionService, SessionService>();
 builder.Services.AddSingleton<IRoundService, RoundService>();
+builder.Services.AddSingleton<IAIService, AIService>();
 
 var app = builder.Build();
 
