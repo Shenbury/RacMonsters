@@ -1,4 +1,3 @@
-using RacMonsters.Server.Services;
 using RacMonsters.Server.Services.Characters;
 
 namespace RacMonsters.Server.Endpoints;
