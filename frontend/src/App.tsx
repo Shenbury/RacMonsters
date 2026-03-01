@@ -3,8 +3,39 @@ import './App.css'
 
 type GameState = 'select' | 'battle' | 'victory' | 'defeat'
 
-export default function App() {
-    const [allChars, setAllChars] = useState<any[]>([])
+/**
+ * Minimal shapes inferred from usage in the component.
+ */
+interface Ability {
+    name?: string
+    Name?: string
+    power?: number
+    Power?: number
+    description?: string
+    Description?: string
+    isTech?: boolean
+    IsTech?: boolean
+    isHeal?: boolean
+    IsHeal?: boolean
+}
+
+interface Character {
+    id: string | number
+    name?: string
+    imageUrl?: string
+    currentHealth?: number
+    maxHealth?: number
+    attack?: number
+    defense?: number
+    techAttack?: number
+    techDefense?: number
+    abilities?: Ability[]
+    // allow other unknown fields the backend may include
+    [key: string]: any
+}
+
+const App: React.FC = () => {
+    const [allChars, setAllChars] = useState<Character[]>([])
     const [playerHP, setPlayerHP] = useState<number | null>(null)
     const [enemyHP, setEnemyHP] = useState<number | null>(null)
     const [busy, setBusy] = useState(false)
@@ -15,11 +46,11 @@ export default function App() {
     const [playerMiss, setPlayerMiss] = useState(false)
     const [enemyMiss, setEnemyMiss] = useState(false)
     const mounted = useRef(true)
-    const [player, setPlayer] = useState<any | null>(null)
-    const [enemy, setEnemy] = useState<any | null>(null)
-    const [setOpponents] = useState<any[]>([])
+    const [player, setPlayer] = useState<Character | null>(null)
+    const [enemy, setEnemy] = useState<Character | null>(null)
+    const [opponents, setOpponents] = useState<Character[]>([])
     const [gameState, setGameState] = useState<GameState>('select')
-    const [hoveredChar, setHoveredChar] = useState<any | null>(null)
+    const [hoveredChar, setHoveredChar] = useState<Character | null>(null)
 
     useEffect(() => {
         mounted.current = true
@@ -34,19 +65,21 @@ export default function App() {
 
     const pushLog = (s: string) => setLog(l => [s, ...l].slice(0, 6))
 
+    const load = async () => {
+        try {
+            const res = await fetch('/api/characters')
+            const chars = await res.json()
+            if (Array.isArray(chars) && chars.length > 0) {
+                setAllChars(chars)
+                opponents && opponents.length === 0 && setOpponents(chars) // set opponents if not already set
+            }
+        } catch {
+            pushLog('Failed to load characters')
+        }
+    }
+
     // load characters for selection
     useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await fetch('/api/characters')
-                const chars = await res.json()
-                if (Array.isArray(chars) && chars.length > 0) {
-                    setAllChars(chars)
-                }
-            } catch {
-                pushLog('Failed to load characters')
-            }
-        }
         load()
     }, [])
 
@@ -56,13 +89,13 @@ export default function App() {
         return res.json()
     }
 
-    const pickRandomOpponent = (available: any[]) => {
+    const pickRandomOpponent = (available: Character[] | null | undefined): Character | null => {
         if (!available || available.length === 0) return null
         const idx = Math.floor(Math.random() * available.length)
         return available[idx]
     }
 
-    const startWithPlayer = (char: any) => {
+    const startWithPlayer = (char: Character) => {
         // choose player; opponents are others
         const p = { ...char }
         const others = allChars.filter(c => c.id !== char.id).map(c => ({ ...c }))
@@ -87,7 +120,7 @@ export default function App() {
 
     const handleEnemyDefeated = (defeatedEnemy: any) => {
         // update opponents and pick next deterministically from the updated list (avoid stale state)
-        setOpponents(prev => {
+        setOpponents((prev: Character[]) => {
             const updated = prev.map(o => o.id === defeatedEnemy.id ? { ...o, currentHealth: 0 } : o)
             const alive = updated.filter(o => (o.currentHealth ?? o.maxHealth ?? 0) > 0)
             if (alive.length === 0) {
@@ -95,7 +128,7 @@ export default function App() {
                 pushLog('You have beaten the game!')
             } else {
                 const next = pickRandomOpponent(alive)
-                    if (next) {
+                if (next) {
                     setEnemy(next)
                     setEnemyHP(next.currentHealth ?? next.maxHealth ?? 100)
                     // reset player health for the next fight
@@ -116,7 +149,7 @@ export default function App() {
         if (busy || !player || !enemy || gameState !== 'battle') return
         setBusy(true)
 
-        const playerAbility = abilityIndex != null ? player.abilities[abilityIndex] : (player.abilities && player.abilities[0])
+        const playerAbility = abilityIndex != null ? player.abilities?.[abilityIndex] : (player.abilities && player.abilities[0])
         if (!playerAbility) {
             pushLog('No ability available')
             setBusy(false)
@@ -171,9 +204,9 @@ export default function App() {
                 pushLog(`${enemy.name} used ${aiAbilityName}.`)
             }
 
-            const eHit = eAction ? (eAction.hit ?? eAction.Hit) : undefined
-            const eDamage = eAction ? (eAction.damage ?? eAction.Damage) : undefined
-            const eHeal = eAction ? (eAction.healAmount ?? eAction.HealAmount) : undefined
+            const eHit : boolean | undefined = eAction ? (eAction.hit ?? eAction.Hit) : undefined
+            const eDamage : number | undefined = eAction ? (eAction.damage ?? eAction.Damage) : undefined
+            const eHeal : number | undefined = eAction ? (eAction.healAmount ?? eAction.HealAmount) : undefined
 
             if (eHit === false) pushLog(`${enemy.name} missed!`)
             else if (eHeal) pushLog(`${enemy.name} healed ${eHeal} HP.`)
@@ -281,7 +314,7 @@ export default function App() {
                                         <div className="hover-abilities" aria-hidden="true">
                                             <div className="hover-abilities-title">Abilities</div>
                                             <ul>
-                                                {c.abilities.map((ab: any, idx: number) => {
+                                                {c.abilities.map((ab: Ability, idx: number) => {
                                                     const name = ab.name ?? ab.Name ?? 'Ability'
                                                     return (
                                                         <li key={idx} className="hover-ability-item">
@@ -382,7 +415,7 @@ export default function App() {
 
             <div className="controls">
                             <div className="actions ability-grid">
-                                {player?.abilities && player.abilities.map((a: any, i: number) => {
+                                {player?.abilities && player.abilities.map((a: Ability, i: number) => {
                                     const name = a.name ?? a.Name ?? 'Ability'
                                     const power = a.power ?? a.Power
                                     const description = a.description ?? a.Description ?? ''
@@ -451,3 +484,5 @@ export default function App() {
         </div>
     )
 }
+
+export default App;
