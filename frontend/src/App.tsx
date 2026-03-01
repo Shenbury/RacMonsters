@@ -17,7 +17,7 @@ export default function App() {
     const mounted = useRef(true)
     const [player, setPlayer] = useState<any | null>(null)
     const [enemy, setEnemy] = useState<any | null>(null)
-    const [opponents, setOpponents] = useState<any[]>([])
+    const [setOpponents] = useState<any[]>([])
     const [gameState, setGameState] = useState<GameState>('select')
     const [hoveredChar, setHoveredChar] = useState<any | null>(null)
 
@@ -83,19 +83,7 @@ export default function App() {
         }
     }
 
-    const handleNextOpponent = () => {
-        // choose next alive opponent
-        const alive = opponents.filter(o => (o.currentHealth ?? o.maxHealth ?? 0) > 0)
-        if (alive.length === 0) {
-            setGameState('victory')
-            pushLog('All foes defeated!')
-            return
-        }
-        const next = pickRandomOpponent(alive)
-        setEnemy(next)
-        setEnemyHP(next.currentHealth ?? next.maxHealth ?? 100)
-        pushLog(`${next.name} steps forward to challenge you.`)
-    }
+    // (Previously unused) helper removed to satisfy strict linting rules
 
     const handleEnemyDefeated = (defeatedEnemy: any) => {
         // update opponents and pick next deterministically from the updated list (avoid stale state)
@@ -107,11 +95,11 @@ export default function App() {
                 pushLog('You have beaten the game!')
             } else {
                 const next = pickRandomOpponent(alive)
-                if (next) {
+                    if (next) {
                     setEnemy(next)
                     setEnemyHP(next.currentHealth ?? next.maxHealth ?? 100)
                     // reset player health for the next fight
-                    setPlayer(prevPlayer => {
+                    setPlayer((prevPlayer: any | null) => {
                         if (!prevPlayer) return prevPlayer
                         const resetPlayer = { ...prevPlayer, currentHealth: prevPlayer.maxHealth }
                         return resetPlayer
@@ -140,7 +128,6 @@ export default function App() {
             playerB: { character: enemy, ability: null }
         }
 
-        const oldPlayerHP = playerHP ?? (player.maxHealth ?? 100)
         const oldEnemyHP = enemyHP ?? (enemy.maxHealth ?? 100)
 
         const result = await postRound(round)
@@ -153,7 +140,6 @@ export default function App() {
             const newEnemyHP = updatedEnemy.currentHealth ?? (updatedEnemy.maxHealth ?? 100)
 
             // compute differences
-            const playerDelta = newPlayerHP - oldPlayerHP
             const enemyDelta = oldEnemyHP - newEnemyHP
 
             // update local copies
@@ -240,84 +226,7 @@ export default function App() {
         setBusy(false)
     }
 
-    const playerHeal = async () => {
-        if (busy || !player || !enemy || gameState !== 'battle') return
-        setBusy(true)
-
-        const healAbility = player.abilities?.find((a: any) => (a.isHeal ?? a.IsHeal))
-        if (!healAbility) {
-            pushLog('No heal available')
-            setBusy(false)
-            return
-        }
-
-        const oldPlayerHP = playerHP ?? (player.maxHealth ?? 100)
-        const round = {
-            playerA: { character: player, ability: healAbility },
-            playerB: { character: enemy, ability: null }
-        }
-
-        const result = await postRound(round)
-        if (result) {
-            const updatedPlayer = result.playerA?.character ?? player
-            const updatedEnemy = result.playerB?.character ?? enemy
-            const newPlayerHP = updatedPlayer.currentHealth ?? (updatedPlayer.maxHealth ?? 100)
-            const newEnemyHP = updatedEnemy.currentHealth ?? (updatedEnemy.maxHealth ?? 100)
-
-            setPlayer(updatedPlayer)
-            setEnemy(updatedEnemy)
-            setPlayerHP(newPlayerHP)
-            setEnemyHP(newEnemyHP)
-
-            const playerDelta = newPlayerHP - oldPlayerHP
-            const healName = healAbility.name ?? healAbility.Name ?? 'Heal'
-            pushLog(`${player.name} used ${healName}.`)
-            if (playerDelta > 0) pushLog(`${player.name} healed ${playerDelta} HP.`)
-
-            const aiUsed = result.playerB?.ability
-            if (aiUsed) {
-                const aiName = aiUsed.name ?? aiUsed.Name ?? 'Ability'
-                pushLog(`${enemy.name} used ${aiName}.`)
-            }
-
-            // Structured results
-            const pAction = result.playerA
-            const eAction = result.playerB
-            const pHit = pAction ? (pAction.hit ?? pAction.Hit) : undefined
-            const pHeal = pAction ? (pAction.healAmount ?? pAction.HealAmount) : undefined
-            const pDamage = pAction ? (pAction.damage ?? pAction.Damage) : undefined
-
-            const eHit = eAction ? (eAction.hit ?? eAction.Hit) : undefined
-            const eHeal = eAction ? (eAction.healAmount ?? eAction.HealAmount) : undefined
-            const eDamage = eAction ? (eAction.damage ?? eAction.Damage) : undefined
-
-            if (pHit === false) pushLog(`${player.name} missed!`)
-            else if (pHeal) pushLog(`${player.name} healed ${pHeal} HP.`)
-            else if (pDamage) pushLog(`${player.name} dealt ${pDamage} damage to ${enemy.name}.`)
-
-            if (eHit === false) pushLog(`${enemy.name} missed!`)
-            else if (eHeal) pushLog(`${enemy.name} healed ${eHeal} HP.`)
-            else if (eDamage) pushLog(`${enemy.name} dealt ${eDamage} damage to ${player.name}.`)
-
-            // animations
-            setPlayerAnim(pHeal ? 'glow-green' : 'heal')
-            setTimeout(() => setPlayerAnim(null), 700)
-            if (eDamage) {
-                setPlayerAnim(prev => (prev ? prev + ' glow-red shudder' : 'glow-red shudder'))
-            }
-
-            if ((newEnemyHP ?? 0) <= 0) {
-                pushLog(`${enemy.name} has been defeated.`)
-                handleEnemyDefeated(enemy)
-            }
-
-            if ((newPlayerHP ?? 0) <= 0) {
-                setGameState('defeat')
-                pushLog(`${player.name} has fallen...`)
-            }
-        }
-        setBusy(false)
-    }
+    // Player heal handler removed; healing is handled through abilities posted to the server
 
     const resetAll = () => {
         setPlayer(null)
@@ -374,9 +283,6 @@ export default function App() {
                                             <ul>
                                                 {c.abilities.map((ab: any, idx: number) => {
                                                     const name = ab.name ?? ab.Name ?? 'Ability'
-                                                    const power = ab.power ?? ab.Power
-                                                    const isTech = ab.isTech ?? ab.IsTech
-                                                    const isHeal = ab.isHeal ?? ab.IsHeal
                                                     return (
                                                         <li key={idx} className="hover-ability-item">
                                                             <span className="hover-ability-name">{name}</span>

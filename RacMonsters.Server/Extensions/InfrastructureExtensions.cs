@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting
         public static TBuilder AddSqlServerAndRedis<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
         {
             var configuration = builder.Configuration;
-            builder.AddSqlServerDbContext<RacMonstersDbContext>(connectionName: "RacMonstersServer", options => options.ConnectionString = configuration.GetConnectionString("RacMonstersDB"));
+            builder.AddSqlServerDbContext<RacMonstersDbContext>(connectionName: "rmserver", options => options.ConnectionString = configuration.GetConnectionString("rmdb"));
 
             // Register distributed cache backed by Redis
             builder.AddRedisClient(connectionName: "cache");

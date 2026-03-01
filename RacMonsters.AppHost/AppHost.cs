@@ -2,8 +2,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
 
-var sql = builder.AddSqlServer("RacMonstersServer");
-var sqldb = sql.AddDatabase("RacMonstersDB");
+var sql = builder.AddSqlServer("rmserver");
+var sqldb = sql.AddDatabase("rmdb");
 
 var server = builder.AddProject<Projects.RacMonsters_Server>("server")
     .WithHttpHealthCheck("/health")
