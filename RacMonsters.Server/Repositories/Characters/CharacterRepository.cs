@@ -1,6 +1,7 @@
 ﻿using RacMonsters.Server.Models;
 using RacMonsters.Server.Repositories.Abilities;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 
 namespace RacMonsters.Server.Repositories.Characters
@@ -28,12 +29,12 @@ namespace RacMonsters.Server.Repositories.Characters
             int[] AbilityIds
         );
 
-        private static readonly CharacterTemplate[] _templates = new[]
+        private readonly CharacterTemplate[] _templates = new[]
         {
             new CharacterTemplate(
             Id: 1,
             Name: "Ashley",
-            ImageUrl: "public/Ashley.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Ashley.png" : "public/Ashley.png",
             MaxHealth: 50,
             CurrentHealth: 50,
             Attack: 6,
@@ -45,7 +46,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 2,
             Name: "Banbury",
-            ImageUrl: "public/Banbury.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Banbury.png" : "public/Banbury.png",
             MaxHealth: 35,
             CurrentHealth: 35,
             Attack: 5,
@@ -57,7 +58,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 3,
             Name: "Beattie",
-            ImageUrl: "public/Beattie.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Beattie.png" : "public/Beattie.png",
             MaxHealth: 75,
             CurrentHealth: 75,
             Attack: 2,
@@ -69,7 +70,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 4,
             Name: "Faisal",
-            ImageUrl: "public/Faisal.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Faisal.png" : "public/Faisal.png",
             MaxHealth: 60,
             CurrentHealth: 60,
             Attack: 1,
@@ -81,7 +82,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 5,
             Name: "JP",
-            ImageUrl: "public/JP.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "JP.png" : "public/JP.png",
             MaxHealth: 45,
             CurrentHealth: 45,
             Attack: 5,
@@ -93,7 +94,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 6,
             Name: "Langdon",
-            ImageUrl: "public/Langdon.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Langdon.png" : "public/Langdon.png",
             MaxHealth: 40,
             CurrentHealth: 40,
             Attack: 6,
@@ -105,7 +106,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 7,
             Name: "Lilley",
-            ImageUrl: "public/Lilley.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Lilley.png" : "public/Lilley.png",
             MaxHealth: 40,
             CurrentHealth: 40,
             Attack: 8,
@@ -117,7 +118,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 8,
             Name: "Nunan",
-            ImageUrl: "public/Nunan.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Nunan.png" : "public/Nunan.png",
             MaxHealth: 30,
             CurrentHealth: 30,
             Attack: 2,
@@ -129,7 +130,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 9,
             Name: "Sam",
-            ImageUrl: "public/Sam.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Sam.png" : "public/Sam.png",
             MaxHealth: 40,
             CurrentHealth: 32,
             Attack: 12,
@@ -142,7 +143,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 10,
             Name: "Simon",
-            ImageUrl: "public/Simon.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Simon.png" : "public/Simon.png",
             MaxHealth: 50,
             CurrentHealth: 50,
             Attack: 5,
