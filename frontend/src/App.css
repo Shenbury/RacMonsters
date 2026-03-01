@@ -98,6 +98,20 @@
   animation: fadeInDown 0.6s ease-out;
 }
 
+.header-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.saved-name {
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.04);
+}
+
 .logo-link {
   display: inline-block;
   border-radius: 0.5rem;
@@ -475,6 +489,10 @@
   align-items: stretch;
 }
 
+/* wrapper around each tile so hover popover can be positioned without
+   intercepting pointer events on the underlying button */
+.char-tile-wrapper { position: relative; }
+
 .char-tile {
   display: flex;
   flex-direction: column;
@@ -494,6 +512,26 @@
   transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(0,0,0,0.2);
 }
+
+/* Abilities preview shown when hovering a tile. Keep it visually above
+   the tile but ignore pointer events so clicks on the tile still work */
+.hover-abilities {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  pointer-events: none;
+  min-width: 160px;
+  max-width: 320px;
+  background: rgba(0,0,0,0.6);
+  color: var(--text-primary);
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.hover-abilities-title { font-weight: 700; margin-bottom: 0.4rem }
+.hover-ability-item { font-size: 0.9rem; color: var(--text-tertiary); margin-bottom: 0.2rem }
 
 .char-sprite img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px }
 .char-name { font-weight: 600 }

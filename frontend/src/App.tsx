@@ -5,6 +5,7 @@ import './App.css'
 // Music files located in public/music. Update this list if you add/remove songs.
 const SONG_FILENAMES = [
     'RAC Battle Theme(1).mp3',
+    'Breakdown Battle Royale.mp3',
     'RAC Battle Theme(2).mp3',
     'RAC Battle Theme(3).mp3',
     'RAC Battle Theme.mp3'
@@ -49,6 +50,7 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null)
     const [filter, setFilter] = useState<string>('')
     const [playerName, setPlayerName] = useState<string>('')
+    const [nameSaved, setNameSaved] = useState<boolean>(false)
     const [playerHP, setPlayerHP] = useState<number | null>(null)
     const [enemyHP, setEnemyHP] = useState<number | null>(null)
     const [busy, setBusy] = useState(false)
@@ -84,6 +86,7 @@ const App: React.FC = () => {
             if (!res.ok) return
             const data = await res.json()
             setLeaderboard(Array.isArray(data) ? data : [])
+            console.log(leaderboard);
         } catch {
             // ignore
         }
@@ -124,6 +127,7 @@ const App: React.FC = () => {
         if (stored != null) setDarkMode(stored === 'true')
         const storedName = localStorage.getItem('rac-player-name')
         if (storedName) setPlayerName(storedName)
+        if (storedName) setNameSaved(true)
     }, [])
 
     // Initialize audio element once
@@ -221,6 +225,11 @@ const App: React.FC = () => {
         fetchLeaderboard()
     }, [])
 
+    // refresh leaderboard whenever the user navigates to the leaderboard view
+    useEffect(() => {
+        if (gameState === 'leaderboard') fetchLeaderboard()
+    }, [gameState])
+
     useEffect(() => {
         document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
         localStorage.setItem('rac-dark', darkMode ? 'true' : 'false')
@@ -267,7 +276,16 @@ const App: React.FC = () => {
 
     const startWithPlayer = (char: Character) => {
         if (!playerName || playerName.trim() === '') {
-            pushLog('Please enter a player name before choosing a champion')
+            const msg = 'Please enter a player name before choosing a champion'
+            // surface the message so it's visible on the selection screen
+            setError(msg)
+            // also add to the transient log for when the battle view appears
+            pushLog(msg)
+            // clear the error banner after a short delay
+            setTimeout(() => {
+                // avoid clearing other real errors if they occurred; only clear if still our message
+                setError(prev => (prev === msg ? null : prev))
+            }, 3500)
             return
         }
 
@@ -486,9 +504,18 @@ const App: React.FC = () => {
         <div className={`app-container battle-theme ${darkMode ? 'dark' : ''}`}>
             <header className="app-header">
                 <h1 className="app-title">RAC Battle</h1>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input placeholder="Your name" aria-label="Player name" value={playerName} onChange={e => setPlayerName(e.target.value)} style={{ padding: 6, borderRadius: 6 }} />
-                    <button className="btn" onClick={() => { localStorage.setItem('rac-player-name', playerName); pushLog('Name saved') }}>Save</button>
+                <div className="header-controls">
+                    {!nameSaved ? (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <input placeholder="Your name" aria-label="Player name" value={playerName} onChange={e => setPlayerName(e.target.value)} style={{ padding: 6, borderRadius: 6 }} />
+                            <button className="btn" onClick={() => { localStorage.setItem('rac-player-name', playerName); setNameSaved(true); pushLog('Name saved') }}>Save</button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <div className="saved-name">{playerName}</div>
+                            <button className="btn" onClick={() => { setNameSaved(false) }} aria-label="Edit name">Edit</button>
+                        </div>
+                    )}
                     <button className="btn" onClick={() => setGameState('leaderboard')}>Leaderboard</button>
                 </div>
             </header>
@@ -717,6 +744,26 @@ const App: React.FC = () => {
                         <p>All opponents have been defeated. The champion sits upon the throne.</p>
                         <div className="controls-right">
                             <button className="btn reset" onClick={resetAll}>Play Again</button>
+                        </div>
+                    </div>
+                )}
+
+                {gameState === 'leaderboard' && (
+                    <div className="card leaderboard-card">
+                        <h2 className="section-title">Leaderboard</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {leaderboard.length === 0 ? (
+                                <div>No entries yet</div>
+                            ) : (
+                                <ol>
+                                    {leaderboard.map((e) => (
+                                        <li key={e.id ?? `${e.name}-${e.timestamp}`}>{e.name} — {e.score}</li>
+                                    ))}
+                                </ol>
+                            )}
+                            <div className="controls-right">
+                                <button className="btn" onClick={() => setGameState('select')}>Back</button>
+                            </div>
                         </div>
                     </div>
                 )}
