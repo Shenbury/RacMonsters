@@ -19,5 +19,21 @@ namespace RacMonsters.Server.Repositories.Sessions
             var s = _sessions.FirstOrDefault(x => x.Id == sessionId);
             return await Task.FromResult(s!);
         }
+
+        public async Task<Session> UpdateSession(Session session)
+        {
+            var idx = _sessions.FindIndex(x => x.Id == session.Id);
+            if (idx >= 0)
+            {
+                _sessions[idx] = session;
+            }
+            else
+            {
+                // if session not present, add it
+                _sessions.Add(session);
+            }
+
+            return await Task.FromResult(session);
+        }
     }
 }

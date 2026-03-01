@@ -6,5 +6,6 @@ namespace RacMonsters.Server.Services.Sessions
     {
         Task<Session> CreateSession(Session session);
         Task<Session?> GetSession(int id);
+        Task<Session> UpdateSession(Session session);
     }
 }

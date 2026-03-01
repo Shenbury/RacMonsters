@@ -25,5 +25,11 @@ namespace RacMonsters.Server.Services.Sessions
         {
             return await _sessionRepository.GetSession(id);
         }
+
+        public async Task<Session> UpdateSession(Session session)
+        {
+            session.Battles ??= Array.Empty<Battle>();
+            return await _sessionRepository.UpdateSession(session);
+        }
     }
 }
