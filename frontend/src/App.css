@@ -398,6 +398,36 @@
   animation: spin 1s linear infinite;
 }
 
+/* Music player styles */
+.music-player {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--weather-card-border);
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.music-player .music-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.music-player .track-name {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Speech bubble for abilities */
 .speech-bubble {
   position: absolute;

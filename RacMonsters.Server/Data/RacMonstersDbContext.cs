@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using RacMonsters.Server.Models;
 
 namespace RacMonsters.Server.Data
 {
@@ -37,6 +38,15 @@ namespace RacMonsters.Server.Data
         public string PlayerBJson { get; set; } = string.Empty;
     }
 
+    public class LeaderboardEntity
+    {
+        [Key]
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int Score { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
     public class RacMonstersDbContext : DbContext
     {
         public RacMonstersDbContext(DbContextOptions<RacMonstersDbContext> options) : base(options)
@@ -46,6 +56,7 @@ namespace RacMonsters.Server.Data
         public DbSet<SessionEntity> Sessions { get; set; } = null!;
         public DbSet<BattleEntity> Battles { get; set; } = null!;
         public DbSet<RoundEntity> Rounds { get; set; } = null!;
+        public DbSet<LeaderboardEntity> Leaderboard { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -72,6 +83,15 @@ namespace RacMonsters.Server.Data
                 eb.Property(e => e.PlayerAJson).HasColumnType("nvarchar(max)");
                 eb.Property(e => e.PlayerBJson).HasColumnType("nvarchar(max)");
                 eb.HasOne(e => e.Battle).WithMany(b => b.Rounds).HasForeignKey(e => e.BattleId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<LeaderboardEntity>(eb =>
+            {
+                eb.ToTable("Leaderboard");
+                eb.HasKey(e => e.Id);
+                eb.Property(e => e.Name).HasColumnType("nvarchar(200)");
+                eb.Property(e => e.Score).HasColumnType("int");
+                eb.Property(e => e.Timestamp).HasColumnType("datetime2");
             });
 
             base.OnModelCreating(modelBuilder);

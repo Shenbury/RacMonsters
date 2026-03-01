@@ -2,7 +2,15 @@ import * as React from 'react'
 const { useEffect, useRef, useState } = React
 import './App.css'
 
-type GameState = 'select' | 'battle' | 'victory' | 'defeat'
+// Music files located in public/music. Update this list if you add/remove songs.
+const SONG_FILENAMES = [
+    'RAC Battle Theme(1).mp3',
+    'RAC Battle Theme(2).mp3',
+    'RAC Battle Theme(3).mp3',
+    'RAC Battle Theme.mp3'
+]
+
+type GameState = 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard'
 
 /**
  * Minimal shapes inferred from usage in the component.
@@ -40,6 +48,7 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [filter, setFilter] = useState<string>('')
+    const [playerName, setPlayerName] = useState<string>('')
     const [playerHP, setPlayerHP] = useState<number | null>(null)
     const [enemyHP, setEnemyHP] = useState<number | null>(null)
     const [busy, setBusy] = useState(false)
@@ -57,6 +66,50 @@ const App: React.FC = () => {
     const [opponents, setOpponents] = useState<Character[]>([])
     const [gameState, setGameState] = useState<GameState>('select')
     const [hoveredChar, setHoveredChar] = useState<Character | null>(null)
+    const [initialOpponentsCount, setInitialOpponentsCount] = useState<number>(0)
+
+    // leaderboard entries fetched from backend
+    interface LeaderboardEntry { id?: number; name: string; score: number; timestamp?: string }
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+
+    // Music player state
+    const audioRef = useRef<HTMLAudioElement | null>(null)
+    const [trackIndex, setTrackIndex] = useState<number>(0)
+    const [isPlaying, setIsPlaying] = useState<boolean>(false)
+    const tracks = SONG_FILENAMES.map(n => `/music/${encodeURIComponent(n)}`)
+
+    const fetchLeaderboard = async (limit = 50) => {
+        try {
+            const res = await fetch(`/api/leaderboard/top?limit=${limit}`)
+            if (!res.ok) return
+            const data = await res.json()
+            setLeaderboard(Array.isArray(data) ? data : [])
+        } catch {
+            // ignore
+        }
+    }
+
+    const addLeaderboardEntry = async (name: string, score: number) => {
+        if (!name) return
+        try {
+            await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, score }) })
+            // refresh local copy
+            fetchLeaderboard()
+        } catch {
+            // ignore
+        }
+    }
+
+    const upsertLeaderboard = async (name: string, delta = 1) => {
+        if (!name) return
+        try {
+            // call upsert endpoint using query parameters so simple binding picks them up
+            await fetch(`/api/leaderboard/upsert?name=${encodeURIComponent(name)}&delta=${delta}`, { method: 'POST' })
+            await fetchLeaderboard()
+        } catch {
+            // ignore
+        }
+    }
 
     useEffect(() => {
         mounted.current = true
@@ -69,6 +122,103 @@ const App: React.FC = () => {
         // persist theme preference
         const stored = localStorage.getItem('rac-dark')
         if (stored != null) setDarkMode(stored === 'true')
+        const storedName = localStorage.getItem('rac-player-name')
+        if (storedName) setPlayerName(storedName)
+    }, [])
+
+    // Initialize audio element once
+    useEffect(() => {
+        if (tracks.length === 0) return
+        const audio = new Audio(tracks[trackIndex])
+        audio.preload = 'auto'
+        audioRef.current = audio
+
+        const onEnded = () => {
+            // auto-advance
+            setIsPlaying(false)
+            setTrackIndex(i => (i + 1) % tracks.length)
+        }
+
+        audio.addEventListener('ended', onEnded)
+
+        // attempt to autoplay on load (may be blocked by browser autoplay policies)
+        audio.play().then(() => {
+            setIsPlaying(true)
+        }).catch(() => {
+            // autoplay blocked; remain paused until user interacts
+            setIsPlaying(false)
+        })
+
+        return () => {
+            audio.pause()
+            audio.removeEventListener('ended', onEnded)
+            audioRef.current = null
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // update audio src when trackIndex changes
+    useEffect(() => {
+        const audio = audioRef.current
+        if (!audio) return
+        audio.src = tracks[trackIndex]
+        audio.load()
+        if (isPlaying) {
+            audio.play().catch(() => {
+                // ignore play errors (autoplay restrictions)
+                setIsPlaying(false)
+            })
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [trackIndex])
+
+    // keep play/pause in sync
+    useEffect(() => {
+        const audio = audioRef.current
+        if (!audio) return
+        if (isPlaying) {
+            audio.play().catch(() => setIsPlaying(false))
+        } else {
+            audio.pause()
+        }
+    }, [isPlaying])
+
+    const playPause = async () => {
+        if (!audioRef.current) return
+        if (isPlaying) {
+            setIsPlaying(false)
+        } else {
+            try {
+                await audioRef.current.play()
+                setIsPlaying(true)
+            } catch {
+                setIsPlaying(false)
+            }
+        }
+    }
+
+    const stop = () => {
+        const audio = audioRef.current
+        if (!audio) return
+        audio.pause()
+        audio.currentTime = 0
+        setIsPlaying(false)
+    }
+
+    const nextTrack = async () => {
+        if (tracks.length === 0) return
+        setTrackIndex(i => (i + 1) % tracks.length)
+        // attempt to play next one
+        setTimeout(() => {
+            const audio = audioRef.current
+            if (!audio) return
+            audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false))
+        }, 50)
+    }
+
+    useEffect(() => {
+        // load leaderboard when app starts
+        fetchLeaderboard()
     }, [])
 
     useEffect(() => {
@@ -116,11 +266,19 @@ const App: React.FC = () => {
     }
 
     const startWithPlayer = (char: Character) => {
+        if (!playerName || playerName.trim() === '') {
+            pushLog('Please enter a player name before choosing a champion')
+            return
+        }
+
         // choose player; opponents are others
         const p = { ...char }
         const others = allChars.filter(c => c.id !== char.id).map(c => ({ ...c }))
         setPlayer(p)
         setOpponents(others)
+        setInitialOpponentsCount(others.length)
+        initialOpponentsCount === 0 && setInitialOpponentsCount(others.length) // set initial count if not already set
+        localStorage.setItem('rac-player-name', playerName)
         setPlayerHP(p.currentHealth ?? p.maxHealth ?? 100)
 
         // pick random opponent
@@ -136,7 +294,7 @@ const App: React.FC = () => {
         }
     }
 
-    const handleEnemyDefeated = (defeatedEnemy: any) => {
+    const handleEnemyDefeated = async (defeatedEnemy: any) => {
         // update opponents and pick next deterministically from the updated list (avoid stale state)
         setOpponents((prev: Character[]) => {
             const updated = prev.map(o => o.id === defeatedEnemy.id ? { ...o, currentHealth: 0 } : o)
@@ -161,6 +319,13 @@ const App: React.FC = () => {
             }
             return updated
         })
+
+        // update leaderboard for this single defeated opponent
+        try {
+            await upsertLeaderboard(playerName, 1)
+        } catch {
+            // ignore
+        }
     }
 
     const doPlayerAttack = async (abilityIndex: number | null) => {
@@ -276,6 +441,8 @@ const App: React.FC = () => {
             if ((newPlayerHP ?? 0) <= 0) {
                 setGameState('defeat')
                 pushLog(`${player.name} has fallen...`)
+                // record defeat to leaderboard (score 0)
+                addLeaderboardEntry(playerName, 0)
             }
         }
 
@@ -319,7 +486,24 @@ const App: React.FC = () => {
         <div className={`app-container battle-theme ${darkMode ? 'dark' : ''}`}>
             <header className="app-header">
                 <h1 className="app-title">RAC Battle</h1>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input placeholder="Your name" aria-label="Player name" value={playerName} onChange={e => setPlayerName(e.target.value)} style={{ padding: 6, borderRadius: 6 }} />
+                    <button className="btn" onClick={() => { localStorage.setItem('rac-player-name', playerName); pushLog('Name saved') }}>Save</button>
+                    <button className="btn" onClick={() => setGameState('leaderboard')}>Leaderboard</button>
+                </div>
             </header>
+
+            {/* Persistent music player in header area */}
+            <div className="music-player" role="region" aria-label="Music player">
+                <div className="music-controls">
+                    <button className="btn" onClick={playPause} aria-label="Play or pause">{isPlaying ? 'Pause' : 'Play'}</button>
+                    <button className="btn" onClick={stop} aria-label="Stop">Stop</button>
+                    <button className="btn" onClick={nextTrack} aria-label="Next">Next</button>
+                </div>
+                <div className="music-info">
+                    <div className="track-name">{decodeURIComponent(tracks[trackIndex].split('/').pop() ?? '')}</div>
+                </div>
+            </div>
 
             <main className="main-content">
                 {gameState === 'select' && (

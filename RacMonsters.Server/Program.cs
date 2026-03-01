@@ -9,6 +9,8 @@ using RacMonsters.Server.Services.Characters;
 using RacMonsters.Server.Services.Abilities;
 using RacMonsters.Server.Services.Battles;
 using RacMonsters.Server.Services.Sessions;
+using RacMonsters.Server.Repositories.Leaderboard;
+using RacMonsters.Server.Services.Leaderboard;
 using RacMonsters.Server.Services.Rounds;
 using RacMonsters.Server.Endpoints;
 using RacMonsters.Server.Services.AIs;
@@ -31,6 +33,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
 builder.Services.AddScoped<IAbilityRepository, AbilityRepository>();
 builder.Services.AddScoped<IBattleRepository, BattleRepository>();
+// leaderboard
+builder.Services.AddScoped<RacMonsters.Server.Repositories.Leaderboard.ILeaderboardRepository, RacMonsters.Server.Repositories.Leaderboard.SqlLeaderboardRepository>();
+builder.Services.AddScoped<RacMonsters.Server.Services.Leaderboard.ILeaderboardService, RacMonsters.Server.Services.Leaderboard.LeaderboardService>();
 
 // register SQL-backed session repository
 builder.Services.AddScoped<ISessionRepository, RacMonsters.Server.Repositories.Sessions.SqlSessionRepository>();
@@ -104,6 +109,7 @@ api.MapBattleEndpoints();
 api.MapAbilityEndpoints();
 api.MapSessionEndpoints();
 api.MapRoundEndpoints();
+api.MapLeaderboardEndpoints();
 
 app.MapDefaultEndpoints();
 
