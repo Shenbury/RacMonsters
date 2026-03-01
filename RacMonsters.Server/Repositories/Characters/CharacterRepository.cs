@@ -31,28 +31,125 @@ namespace RacMonsters.Server.Repositories.Characters
         private static readonly CharacterTemplate[] _templates = new[]
         {
             new CharacterTemplate(
-                1,
-                "Faisal",
-                "public/Faisal.png",
-                30,
-                30,
-                6,
-                4,
-                5,
-                3,
-                new[] { 1, 3 }
+            Id: 1,
+            Name: "Ashley",
+            ImageUrl: "public/Ashley.png",
+            MaxHealth: 50,
+            CurrentHealth: 50,
+            Attack: 6,
+            Defense: 6,
+            TechAttack: 3,
+            TechDefense: 5,
+            AbilityIds: new[] { 1, 2, 3, 4 }
             ),
             new CharacterTemplate(
-                2,
-                "Simon",
-                "public/Simon.png",
-                32,
-                32,
-                5,
-                5,
-                6,
-                4,
-                new[] { 2, 1 }
+            Id: 2,
+            Name: "Banbury",
+            ImageUrl: "public/Banbury.png",
+            MaxHealth: 35,
+            CurrentHealth: 35,
+            Attack: 5,
+            Defense: 3,
+            TechAttack: 11,
+            TechDefense: 7,
+            AbilityIds: new[] { 5, 6, 7, 8 }
+            ),
+            new CharacterTemplate(
+            Id: 3,
+            Name: "Beattie",
+            ImageUrl: "public/Beattie.png",
+            MaxHealth: 75,
+            CurrentHealth: 75,
+            Attack: 2,
+            Defense: 8,
+            TechAttack: 2,
+            TechDefense: 5,
+            AbilityIds: new[] { 9, 10, 11, 12 }
+            ),
+            new CharacterTemplate(
+            Id: 4,
+            Name: "Faisal",
+            ImageUrl: "public/Faisal.png",
+            MaxHealth: 60,
+            CurrentHealth: 60,
+            Attack: 1,
+            Defense: 8,
+            TechAttack: 3,
+            TechDefense: 8,
+            AbilityIds: new[] { 13, 14, 15, 16 }
+            ),
+            new CharacterTemplate(
+            Id: 5,
+            Name: "JP",
+            ImageUrl: "public/JP.png",
+            MaxHealth: 45,
+            CurrentHealth: 45,
+            Attack: 5,
+            Defense: 5,
+            TechAttack: 5,
+            TechDefense: 5,
+            AbilityIds: new[] { 17, 18, 19, 20 }
+            ),
+            new CharacterTemplate(
+            Id: 6,
+            Name: "Langdon",
+            ImageUrl: "public/Langdon.png",
+            MaxHealth: 40,
+            CurrentHealth: 40,
+            Attack: 6,
+            Defense: 10,
+            TechAttack: 2,
+            TechDefense: 6,
+            AbilityIds: new[] { 21, 22, 23, 24 }
+            ),
+            new CharacterTemplate(
+            Id: 7,
+            Name: "Lilley",
+            ImageUrl: "public/Lilley.png",
+            MaxHealth: 40,
+            CurrentHealth: 40,
+            Attack: 8,
+            Defense: 6,
+            TechAttack: 4,
+            TechDefense: 4,
+            AbilityIds: new[] { 25, 26, 27, 28 }
+            ),
+            new CharacterTemplate(
+            Id: 8,
+            Name: "Nunan",
+            ImageUrl: "public/Nunan.png",
+            MaxHealth: 30,
+            CurrentHealth: 30,
+            Attack: 2,
+            Defense: 2,
+            TechAttack: 12,
+            TechDefense: 8,
+            AbilityIds: new[] { 29, 30, 31, 32 }
+            ),
+            new CharacterTemplate(
+            Id: 9,
+            Name: "Sam",
+            ImageUrl: "public/Sam.png",
+            MaxHealth: 40,
+            CurrentHealth: 32,
+            Attack: 12,
+            Defense: 7,
+            TechAttack: 5,
+            TechDefense: 3,
+            AbilityIds: new[] { 33, 34, 35, 36 }
+            ),
+
+            new CharacterTemplate(
+            Id: 10,
+            Name: "Simon",
+            ImageUrl: "public/Simon.png",
+            MaxHealth: 50,
+            CurrentHealth: 50,
+            Attack: 5,
+            Defense: 9,
+            TechAttack: 10,
+            TechDefense: 8,
+            AbilityIds: new[] { 37, 38, 39 ,40 }
             )
         };
 
