@@ -36,7 +36,7 @@ namespace RacMonsters.Server.Repositories.Abilities
                 // JP
                 new Ability { Id = 17, Name = "User Research", Description = "Conducts user research to disprove your theory", IsTech = true, IsHeal = false, Power = 6, Speed = 8, Accuracy = 0.95 },
                 new Ability { Id = 18, Name = "Throw Miniature", Description = "Throws a freshly painted warhammer 40k space marine at your eyeball", IsTech = false, Power = 7, Speed = 8, Accuracy = 0.9 },
-                new Ability { Id = 19, Name = "Go Green", Description = "Gets high on the bud of life", IsTech = true, IsHeal = false, Power = 15, Speed = 5, Accuracy = 0.6 },
+                new Ability { Id = 19, Name = "Go Green", Description = "Gets high on the bud of life", IsTech = true, IsHeal = true, Power = 15, Speed = 5, Accuracy = 0.6 },
                 new Ability { Id = 20, Name = "Force feed dog turd", Description = "Force feed dog turd from this shoe into the opponents mouth", IsTech = false, IsHeal = false, Power = 12, Speed = 1, Accuracy = 0.6 },
 
                 // Langdon
