@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import * as React from 'react'
+const { useEffect, useRef, useState } = React
 import './App.css'
 
 type GameState = 'select' | 'battle' | 'victory' | 'defeat'
@@ -36,6 +37,9 @@ interface Character {
 
 const App: React.FC = () => {
     const [allChars, setAllChars] = useState<Character[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [filter, setFilter] = useState<string>('')
     const [playerHP, setPlayerHP] = useState<number | null>(null)
     const [enemyHP, setEnemyHP] = useState<number | null>(null)
     const [busy, setBusy] = useState(false)
@@ -45,6 +49,8 @@ const App: React.FC = () => {
     const [enemyAnim, setEnemyAnim] = useState<string | null>(null)
     const [playerMiss, setPlayerMiss] = useState(false)
     const [enemyMiss, setEnemyMiss] = useState(false)
+    const [playerBubble, setPlayerBubble] = useState<string | null>(null)
+    const [enemyBubble, setEnemyBubble] = useState<string | null>(null)
     const mounted = useRef(true)
     const [player, setPlayer] = useState<Character | null>(null)
     const [enemy, setEnemy] = useState<Character | null>(null)
@@ -60,21 +66,35 @@ const App: React.FC = () => {
     }, [])
 
     useEffect(() => {
+        // persist theme preference
+        const stored = localStorage.getItem('rac-dark')
+        if (stored != null) setDarkMode(stored === 'true')
+    }, [])
+
+    useEffect(() => {
         document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
+        localStorage.setItem('rac-dark', darkMode ? 'true' : 'false')
     }, [darkMode])
 
     const pushLog = (s: string) => setLog(l => [s, ...l].slice(0, 6))
 
     const load = async () => {
+        setLoading(true)
+        setError(null)
         try {
             const res = await fetch('/api/characters')
+            if (!res.ok) throw new Error(`Status ${res.status}`)
             const chars = await res.json()
             if (Array.isArray(chars) && chars.length > 0) {
                 setAllChars(chars)
                 opponents && opponents.length === 0 && setOpponents(chars) // set opponents if not already set
             }
-        } catch {
+        } catch (ex: any) {
+            const msg = ex?.message ?? 'Failed to load characters'
+            setError(msg)
             pushLog('Failed to load characters')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -115,8 +135,6 @@ const App: React.FC = () => {
             setGameState('victory')
         }
     }
-
-    // (Previously unused) helper removed to satisfy strict linting rules
 
     const handleEnemyDefeated = (defeatedEnemy: any) => {
         // update opponents and pick next deterministically from the updated list (avoid stale state)
@@ -182,6 +200,9 @@ const App: React.FC = () => {
             setEnemyHP(newEnemyHP)
 
             const playerAbilityName = playerAbility.name ?? playerAbility.Name ?? 'Ability'
+            // show speech bubbles for both actors
+            setPlayerBubble(playerAbilityName)
+            setTimeout(() => setPlayerBubble(null), 1200)
             pushLog(`${player.name} used ${playerAbilityName}.`)
             if (enemyDelta > 0) pushLog(`${enemy.name} took ${enemyDelta} damage.`)
             if (enemyDelta <= 0) pushLog(`${enemy.name} took no damage.`)
@@ -201,6 +222,8 @@ const App: React.FC = () => {
             const aiUsed = eAction?.ability ?? result.playerB?.ability
             if (aiUsed) {
                 const aiAbilityName = aiUsed.name ?? aiUsed.Name ?? 'Ability'
+                setEnemyBubble(aiAbilityName)
+                setTimeout(() => setEnemyBubble(null), 1200)
                 pushLog(`${enemy.name} used ${aiAbilityName}.`)
             }
 
@@ -259,7 +282,20 @@ const App: React.FC = () => {
         setBusy(false)
     }
 
-    // Player heal handler removed; healing is handled through abilities posted to the server
+    // keyboard shortcuts for abilities (1-4) and restart (r)
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (gameState !== 'battle') return
+            if (!player || !player.abilities) return
+            if (e.key >= '1' && e.key <= '4') {
+                const idx = parseInt(e.key, 10) - 1
+                if (player.abilities[idx]) doPlayerAttack(idx)
+            }
+            if (e.key.toLowerCase() === 'r') resetAll()
+        }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [gameState, player])
 
     const resetAll = () => {
         setPlayer(null)
@@ -289,45 +325,69 @@ const App: React.FC = () => {
                 {gameState === 'select' && (
                     <div className="card select-card">
                         <h2 className="section-title">Choose your champion</h2>
-                        <div className="char-grid">
-                            {allChars.map((c) => (
-                                <div key={c.id} className="char-tile-wrapper">
-                                    <button
-                                        className="char-tile"
-                                        onClick={() => startWithPlayer(c)}
-                                        onMouseEnter={() => setHoveredChar(c)}
-                                        onMouseLeave={() => setHoveredChar(null)}
-                                        onFocus={() => setHoveredChar(c)}
-                                        onBlur={() => setHoveredChar(null)}
-                                    >
-                                        <div className="char-sprite">
-                                            {c.imageUrl ? <img src={c.imageUrl} alt={c.name} /> : (
-                                                <svg width="64" height="64" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#fff" /><circle cx="50" cy="40" r="22" fill="#ff9f1c" /></svg>
+                        <div className="section-header">
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input aria-label="Filter characters" placeholder="Search..." value={filter} onChange={e => setFilter(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }} />
+                                <button className="refresh-button" onClick={load} disabled={loading} aria-label="Reload characters">Reload</button>
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="loading-skeleton-grid">
+                                <div className="skeleton-tile" />
+                                <div className="skeleton-tile" />
+                                <div className="skeleton-tile" />
+                                <div className="skeleton-tile" />
+                            </div>
+                        ) : error ? (
+                            <div>
+                                <div className="error-banner">Failed to load: {error}</div>
+                            </div>
+                        ) : (
+                            <div className="char-grid">
+                                {allChars
+                                    .filter(c => !filter || (c.name ?? '').toString().toLowerCase().includes(filter.toLowerCase()))
+                                    .map((c) => (
+                                        <div key={c.id} className="char-tile-wrapper">
+                                            <button
+                                                className="char-tile"
+                                                onClick={() => startWithPlayer(c)}
+                                                onMouseEnter={() => setHoveredChar(c)}
+                                                onMouseLeave={() => setHoveredChar(null)}
+                                                onFocus={() => setHoveredChar(c)}
+                                                onBlur={() => setHoveredChar(null)}
+                                            >
+                                                <div className="char-sprite">
+                                                    {c.imageUrl ? (
+                                                        <img src={c.imageUrl} alt={c.name} />
+                                                    ) : (
+                                                        <svg width="64" height="64" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#fff" /><circle cx="50" cy="40" r="22" fill="#ff9f1c" /></svg>
+                                                    )}
+                                                </div>
+                                                <div className="char-name">{c.name}</div>
+                                                <div className="char-stats">HP: {c.maxHealth ?? '--'} | ATK: {c.attack ?? '--'} | DEF: {c.defense ?? '--'}</div>
+                                                <div className="char-stats">TATK: {c.techAttack ?? '--'} | TDEF: {c.techDefense ?? '--'}</div>
+                                            </button>
+
+                                            {hoveredChar?.id === c.id && c.abilities && c.abilities.length > 0 && (
+                                                <div className="hover-abilities" aria-hidden="true">
+                                                    <div className="hover-abilities-title">Abilities</div>
+                                                    <ul>
+                                                        {c.abilities.map((ab: Ability, idx: number) => {
+                                                            const name = ab.name ?? ab.Name ?? 'Ability'
+                                                            return (
+                                                                <li key={idx} className="hover-ability-item">
+                                                                    <span className="hover-ability-name">{name}</span>
+                                                                </li>
+                                                            )
+                                                        })}
+                                                    </ul>
+                                                </div>
                                             )}
                                         </div>
-                                        <div className="char-name">{c.name}</div>
-                                        <div className="char-stats">HP: {c.maxHealth ?? '--'} | ATK: {c.attack ?? '--'} | DEF: {c.defense ?? '--'}</div>
-                                        <div className="char-stats">TATK: {c.techAttack ?? '--'} | TDEF: {c.techDefense ?? '--'}</div>
-                                    </button>
-
-                                    {hoveredChar?.id === c.id && c.abilities && c.abilities.length > 0 && (
-                                        <div className="hover-abilities" aria-hidden="true">
-                                            <div className="hover-abilities-title">Abilities</div>
-                                            <ul>
-                                                {c.abilities.map((ab: Ability, idx: number) => {
-                                                    const name = ab.name ?? ab.Name ?? 'Ability'
-                                                    return (
-                                                        <li key={idx} className="hover-ability-item">
-                                                            <span className="hover-ability-name">{name}</span>
-                                                        </li>
-                                                    )
-                                                })}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                    ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -360,6 +420,9 @@ const App: React.FC = () => {
                                     )}
                                     {playerMiss && (
                                         <div className="miss-badge" aria-hidden="true">?</div>
+                                    )}
+                                    {playerBubble && (
+                                        <div className="speech-bubble player" aria-hidden="true">{playerBubble}</div>
                                     )}
                                 </div>
                                 <div className="info">
@@ -394,6 +457,9 @@ const App: React.FC = () => {
                                     {enemyMiss && (
                                         <div className="miss-badge" aria-hidden="true">?</div>
                                     )}
+                                    {enemyBubble && (
+                                        <div className="speech-bubble enemy" aria-hidden="true">{enemyBubble}</div>
+                                    )}
                                 </div>
                                 <div className="info">
                                     <div className="name">{enemy?.name ?? 'Foe'}</div>
@@ -413,7 +479,7 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
-            <div className="controls">
+                        <div className="controls">
                             <div className="actions ability-grid">
                                 {player?.abilities && player.abilities.map((a: Ability, i: number) => {
                                     const name = a.name ?? a.Name ?? 'Ability'
@@ -485,4 +551,4 @@ const App: React.FC = () => {
     )
 }
 
-export default App;
+export default App

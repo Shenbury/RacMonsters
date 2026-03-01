@@ -398,11 +398,48 @@
   animation: spin 1s linear infinite;
 }
 
+/* Speech bubble for abilities */
+.speech-bubble {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ffffff, #f0f0f3);
+  color: #111;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 8px solid #f0f0f3;
+}
+
+.sprite { position: relative; }
+
+.speech-bubble.player { background: linear-gradient(135deg, #e0f7ff, #cfefff); color: #012; }
+.speech-bubble.player::after { border-top-color: #cfefff; }
+.speech-bubble.enemy { background: linear-gradient(135deg, #fff0f0, #ffecec); color: #300; }
+.speech-bubble.enemy::after { border-top-color: #ffecec; }
+
 /* Character selection grid */
 .char-grid {
   display: grid;
-  /* Fixed 4-column layout as requested */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
   align-items: stretch;
@@ -420,6 +457,7 @@
   cursor: pointer;
   width: 100%;
   text-align: center;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .char-tile:hover {
@@ -430,6 +468,13 @@
 .char-sprite img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px }
 .char-name { font-weight: 600 }
 .char-stats { font-size: 0.85rem; color: var(--text-tertiary) }
+
+/* Focus styles for keyboard users */
+.char-tile:focus {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 4px;
+  transform: translateY(-6px) scale(1.02);
+}
 
 /* Victory / throne room */
 .victory-card { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem }
@@ -533,13 +578,17 @@
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-radius: 8px;
   border: 1px solid rgba(0,0,0,0.04);
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
+
+.ability-block:hover { transform: translateY(-4px); box-shadow: 0 8px 22px rgba(0,0,0,0.06); }
 
 .ability-block .btn.ability {
   width: 100%;
   padding: 0.6rem 0.75rem;
   display: block;
   text-align: center;
+  font-size: 0.95rem;
 }
 
 .ability-meta { font-size: 0.8rem; color: var(--text-tertiary); }
@@ -604,6 +653,30 @@
   padding: 1.5rem;
   background: var(--card);
   border-radius: 16px;
+}
+
+/* Loading & empty states */
+.loading-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.skeleton-tile {
+  height: 128px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--skeleton-bg-1) 25%, var(--skeleton-bg-2) 50%, var(--skeleton-bg-1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.error-banner {
+  background: rgba(255, 90, 90, 0.08);
+  border-left: 4px solid rgba(255, 90, 90, 0.3);
+  color: var(--danger);
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
 }
 
 .battle-header {
