@@ -11,6 +11,23 @@ const SONG_FILENAMES = [
     'RAC Battle Theme.mp3'
 ]
 
+// Sound effects located in public/sounds. Update this list if you add/remove sounds.
+const MISS_SOUND_FILENAMES = [
+    'fart.mp3',
+    'DogDoing.mp3'
+]
+
+const HEAL_SOUND_FILENAMES = [
+    'healpop.mp3'
+]
+
+const DEFEAT_SOUND_FILENAMES = [
+    'smack.mp3',
+    'whip.mp3',
+    'yeet.mp3',
+    'EmoDamage.mp3'
+]
+
 type GameState = 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard'
 
 /**
@@ -27,6 +44,8 @@ interface Ability {
     IsTech?: boolean
     isHeal?: boolean
     IsHeal?: boolean
+    accuracy?: number
+    Accuracy?: number
 }
 
 interface Character {
@@ -79,6 +98,7 @@ const App: React.FC = () => {
     const [trackIndex, setTrackIndex] = useState<number>(0)
     const [isPlaying, setIsPlaying] = useState<boolean>(false)
     const [volume, setVolume] = useState<number>(0.8)
+    const [hasInteracted, setHasInteracted] = useState<boolean>(false)
     const tracks = SONG_FILENAMES.map(n => `/music/${encodeURIComponent(n)}`)
 
     const fetchLeaderboard = async (limit = 50) => {
@@ -154,14 +174,6 @@ const App: React.FC = () => {
 
         audio.addEventListener('ended', onEnded)
 
-        // attempt to autoplay on load (may be blocked by browser autoplay policies)
-        audio.play().then(() => {
-            setIsPlaying(true)
-        }).catch(() => {
-            // autoplay blocked; remain paused until user interacts
-            setIsPlaying(false)
-        })
-
         return () => {
             audio.pause()
             audio.removeEventListener('ended', onEnded)
@@ -169,6 +181,35 @@ const App: React.FC = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    // Play audio on first user interaction
+    useEffect(() => {
+        if (hasInteracted) return
+
+        const handleFirstInteraction = () => {
+            setHasInteracted(true)
+            const audio = audioRef.current
+            if (audio && !isPlaying) {
+                audio.play().then(() => {
+                    setIsPlaying(true)
+                }).catch(() => {
+                    // ignore play errors
+                })
+            }
+        }
+
+        // listen for any user interaction
+        const events = ['click', 'keydown', 'touchstart']
+        events.forEach(event => {
+            document.addEventListener(event, handleFirstInteraction, { once: true })
+        })
+
+        return () => {
+            events.forEach(event => {
+                document.removeEventListener(event, handleFirstInteraction)
+            })
+        }
+    }, [hasInteracted, isPlaying])
 
     // update audio src when trackIndex changes
     useEffect(() => {
@@ -257,6 +298,48 @@ const App: React.FC = () => {
     }, [darkMode])
 
     const pushLog = (s: string) => setLog(l => [s, ...l].slice(0, 6))
+
+    const playMissSound = () => {
+        try {
+            const randomIndex = Math.floor(Math.random() * MISS_SOUND_FILENAMES.length)
+            const soundFile = MISS_SOUND_FILENAMES[randomIndex]
+            const sound = new Audio(`/sounds/${encodeURIComponent(soundFile)}`)
+            sound.volume = 0.5
+            sound.play().catch(() => {
+                // ignore play errors
+            })
+        } catch {
+            // ignore audio errors
+        }
+    }
+
+    const playHealSound = () => {
+        try {
+            const randomIndex = Math.floor(Math.random() * HEAL_SOUND_FILENAMES.length)
+            const soundFile = HEAL_SOUND_FILENAMES[randomIndex]
+            const sound = new Audio(`/sounds/${encodeURIComponent(soundFile)}`)
+            sound.volume = 0.5
+            sound.play().catch(() => {
+                // ignore play errors
+            })
+        } catch {
+            // ignore audio errors
+        }
+    }
+
+    const playDefeatSound = () => {
+        try {
+            const randomIndex = Math.floor(Math.random() * DEFEAT_SOUND_FILENAMES.length)
+            const soundFile = DEFEAT_SOUND_FILENAMES[randomIndex]
+            const sound = new Audio(`/sounds/${encodeURIComponent(soundFile)}`)
+            sound.volume = 0.5
+            sound.play().catch(() => {
+                // ignore play errors
+            })
+        } catch {
+            // ignore audio errors
+        }
+    }
 
     const load = async () => {
         setLoading(true)
@@ -354,6 +437,7 @@ const App: React.FC = () => {
                     })
                     setPlayerHP(player?.maxHealth ?? (playerHP ?? 100))
                     pushLog(`${defeatedEnemy.name} was defeated. ${next.name} approaches!`)
+                    playDefeatSound();
                 }
             }
             return updated
@@ -447,9 +531,11 @@ const App: React.FC = () => {
             if (pHit === false) {
                 setPlayerMiss(true)
                 setTimeout(() => setPlayerMiss(false), 1000)
+                playMissSound()
             } else if (pHeal) {
                 setPlayerAnim('glow-green')
                 clearPlayerAnim(1000)
+                playHealSound()
             } else if (pDamage) {
                 setPlayerAnim('shake')
                 setEnemyAnim('glow-red shudder')
@@ -461,9 +547,11 @@ const App: React.FC = () => {
             if (eHit === false) {
                 setEnemyMiss(true)
                 setTimeout(() => setEnemyMiss(false), 1000)
+                playMissSound()
             } else if (eHeal) {
                 setEnemyAnim('glow-green')
                 clearEnemyAnim(1000)
+                playHealSound()
             } else if (eDamage) {
                 setEnemyAnim('shake')
                 setPlayerAnim(prev => (prev ? prev + ' glow-red shudder' : 'glow-red shudder'))
@@ -474,12 +562,14 @@ const App: React.FC = () => {
             // check for defeat/victory
             if ((newEnemyHP ?? 0) <= 0) {
                 pushLog(`${enemy.name} has been defeated.`)
+                playDefeatSound()
                 handleEnemyDefeated(enemy)
             }
 
             if ((newPlayerHP ?? 0) <= 0) {
                 setGameState('defeat')
                 pushLog(`${player.name} has fallen...`)
+                playDefeatSound()
                 // record defeat to leaderboard (score 0) and include champion used
                 addLeaderboardEntry(playerName, 0, player?.name)
             }
@@ -537,6 +627,15 @@ const App: React.FC = () => {
                             <button className="btn" onClick={() => { setNameSaved(false) }} aria-label="Edit name">Edit</button>
                         </div>
                     )}
+                    <label className="dark-toggle">
+                        <input
+                            type="checkbox"
+                            checked={darkMode}
+                            onChange={e => setDarkMode(e.target.checked)}
+                            aria-label="Toggle dark mode"
+                        />
+                        <span>Dark</span>
+                    </label>
                     <button className="btn" onClick={() => setGameState('leaderboard')}>Leaderboard</button>
                 </div>
             </header>
@@ -637,20 +736,6 @@ const App: React.FC = () => {
 
                 {gameState === 'battle' && (
                     <div className="card battle-card" role="region" aria-label="Battle arena">
-                        <div className="battle-header">
-                            <div className="toggles">
-                                <label className="dark-toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={darkMode}
-                                        onChange={e => setDarkMode(e.target.checked)}
-                                        aria-label="Toggle dark mode"
-                                    />
-                                    <span>Dark</span>
-                                </label>
-                            </div>
-                        </div>
-
                         <div className="battle-area">
                             <div className="combatant player">
                                 <div className={`sprite ${playerAnim ?? ''}`} aria-hidden="true">
@@ -731,6 +816,7 @@ const App: React.FC = () => {
                                     const description = a.description ?? a.Description ?? ''
                                     const isTech = a.isTech ?? a.IsTech
                                     const isHeal = a.isHeal ?? a.IsHeal
+                                    const accuracy = a.accuracy ?? a.Accuracy
                                     return (
                                         <div key={i} className="ability-block">
                                             <button className="btn ability" onClick={() => doPlayerAttack(i)} disabled={busy} aria-label={`Use ${name}`}>
@@ -738,7 +824,11 @@ const App: React.FC = () => {
                                             </button>
                                             <div className="ability-meta">
                                                 {description && <div className="ability-desc">{description}</div>}
-                                                <div className="ability-tags">{isTech ? 'Tech' : isHeal ? 'Heal' : ''}{(isTech || isHeal) && power ? ` • Power: ${power}` : (!isTech && !isHeal && power ? `Power: ${power}` : '')}</div>
+                                                <div className="ability-tags">
+                                                    {isTech ? 'Tech' : isHeal ? 'Heal' : ''}
+                                                    {(isTech || isHeal) && power ? ` • Power: ${power}` : (!isTech && !isHeal && power ? `Power: ${power}` : '')}
+                                                    {accuracy != null ? ` • Acc: ${Math.round(accuracy * 100)}%` : ''}
+                                                </div>
                                             </div>
                                         </div>
                                     )
