@@ -99,6 +99,15 @@ public static class Extensions
             // Add a default liveness check to ensure app is responsive
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
+        // Configure health check timeout to 60 seconds (double the default 30s)
+        builder.Services.Configure<HealthCheckServiceOptions>(options =>
+        {
+            foreach (var item in options.Registrations)
+            {
+                item.Timeout = TimeSpan.FromSeconds(120);
+            }
+        });
+
         return builder;
     }
 
