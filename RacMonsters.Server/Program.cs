@@ -64,9 +64,9 @@ using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<RacMonstersDbContext>();
         logger.LogInformation("Applying database migrations...");
-        // Ensure database is created and apply migrations
-        db.Database.EnsureCreated(); // Creates DB if it doesn't exist
-        db.Database.Migrate();
+        // Apply migrations (this will also create the database if it doesn't exist)
+        // Note: Do NOT use EnsureCreated() with Migrate() - EnsureCreated() bypasses migrations
+        await db.Database.MigrateAsync();
         logger.LogInformation("Database migrations applied successfully.");
 
         var seeder = scope.ServiceProvider.GetRequiredService<RacMonsters.Server.Data.DatabaseSeeder>();
