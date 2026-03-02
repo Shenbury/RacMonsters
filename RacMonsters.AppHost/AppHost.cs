@@ -2,7 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
 
-var sql = builder.AddSqlServer("rmserver");
+var sql = builder.AddAzureSqlServer("rmserver");
 var sqldb = sql.AddDatabase("rmdb");
 
 var server = builder.AddProject<Projects.RacMonsters_Server>("server")
