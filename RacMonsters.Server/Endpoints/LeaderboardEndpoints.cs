@@ -19,9 +19,9 @@ public static class LeaderboardEndpoints
             return Results.Ok(res);
         });
 
-        api.MapPost("leaderboard/upsert", async (string name, int delta, ILeaderboardService svc) =>
+        api.MapPost("leaderboard/upsert", async (string name, int delta, string? character, ILeaderboardService svc) =>
         {
-            var res = await svc.Upsert(name, delta);
+            var res = await svc.Upsert(name, delta, character);
             return Results.Ok(res);
         });
     }

@@ -6,6 +6,6 @@ namespace RacMonsters.Server.Repositories.Leaderboard
     {
         Task<LeaderboardEntry> Create(LeaderboardEntry entry);
         Task<IEnumerable<LeaderboardEntry>> GetTop(int limit);
-        Task<LeaderboardEntry> Upsert(string name, int delta);
+        Task<LeaderboardEntry> Upsert(string name, int delta, string? character = null);
     }
 }

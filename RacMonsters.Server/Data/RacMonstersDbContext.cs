@@ -43,6 +43,8 @@ namespace RacMonsters.Server.Data
         [Key]
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        // champion/character used by the player
+        public string Character { get; set; } = string.Empty;
         public int Score { get; set; }
         public DateTime Timestamp { get; set; }
     }
@@ -90,6 +92,7 @@ namespace RacMonsters.Server.Data
                 eb.ToTable("Leaderboard");
                 eb.HasKey(e => e.Id);
                 eb.Property(e => e.Name).HasColumnType("nvarchar(200)");
+                eb.Property(e => e.Character).HasColumnType("nvarchar(200)");
                 eb.Property(e => e.Score).HasColumnType("int");
                 eb.Property(e => e.Timestamp).HasColumnType("datetime2");
             });

@@ -11,11 +11,12 @@ namespace RacMonsters.Server.Services.Leaderboard
         public async Task<LeaderboardEntry> AddEntry(LeaderboardEntry entry)
         {
             entry.Timestamp = DateTime.UtcNow;
+            // ensure timestamp and pass through
             return await _repo.Create(entry);
         }
 
         public async Task<IEnumerable<LeaderboardEntry>> GetTop(int limit) => await _repo.GetTop(limit);
 
-        public async Task<LeaderboardEntry> Upsert(string name, int delta) => await _repo.Upsert(name, delta);
+        public async Task<LeaderboardEntry> Upsert(string name, int delta, string? character = null) => await _repo.Upsert(name, delta, character);
     }
 }

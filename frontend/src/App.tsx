@@ -71,7 +71,7 @@ const App: React.FC = () => {
     const [initialOpponentsCount, setInitialOpponentsCount] = useState<number>(0)
 
     // leaderboard entries fetched from backend
-    interface LeaderboardEntry { id?: number; name: string; score: number; timestamp?: string }
+    interface LeaderboardEntry { id?: number; name: string; character?: string; score: number; timestamp?: string }
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
 
     // Music player state
@@ -92,10 +92,10 @@ const App: React.FC = () => {
         }
     }
 
-    const addLeaderboardEntry = async (name: string, score: number) => {
+    const addLeaderboardEntry = async (name: string, score: number, character?: string) => {
         if (!name) return
         try {
-            await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, score }) })
+            await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, score, character }) })
             // refresh local copy
             fetchLeaderboard()
         } catch {
@@ -103,11 +103,12 @@ const App: React.FC = () => {
         }
     }
 
-    const upsertLeaderboard = async (name: string, delta = 1) => {
+    const upsertLeaderboard = async (name: string, delta = 1, character?: string) => {
         if (!name) return
         try {
             // call upsert endpoint using query parameters so simple binding picks them up
-            await fetch(`/api/leaderboard/upsert?name=${encodeURIComponent(name)}&delta=${delta}`, { method: 'POST' })
+            const charParam = character ?? (player?.name ?? '')
+            await fetch(`/api/leaderboard/upsert?name=${encodeURIComponent(name)}&delta=${delta}&character=${encodeURIComponent(charParam)}`, { method: 'POST' })
             await fetchLeaderboard()
         } catch {
             // ignore
@@ -338,9 +339,9 @@ const App: React.FC = () => {
             return updated
         })
 
-        // update leaderboard for this single defeated opponent
+        // update leaderboard for this single defeated opponent (record champion used)
         try {
-            await upsertLeaderboard(playerName, 1)
+            await upsertLeaderboard(playerName, 1, player?.name)
         } catch {
             // ignore
         }
@@ -459,8 +460,8 @@ const App: React.FC = () => {
             if ((newPlayerHP ?? 0) <= 0) {
                 setGameState('defeat')
                 pushLog(`${player.name} has fallen...`)
-                // record defeat to leaderboard (score 0)
-                addLeaderboardEntry(playerName, 0)
+                // record defeat to leaderboard (score 0) and include champion used
+                addLeaderboardEntry(playerName, 0, player?.name)
             }
         }
 
@@ -757,7 +758,7 @@ const App: React.FC = () => {
                             ) : (
                                 <ol>
                                     {leaderboard.map((e) => (
-                                        <li key={e.id ?? `${e.name}-${e.timestamp}`}>{e.name} — {e.score}</li>
+                                        <li key={e.id ?? `${e.name}-${e.timestamp}`}>{e.name}{e.character ? ` (${e.character})` : ''} — {e.score}</li>
                                     ))}
                                 </ol>
                             )}
