@@ -59,8 +59,8 @@ namespace RacMonsters.Server.Repositories.Characters
             Id: 3,
             Name: "Beattie",
             ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Beattie.png" : "public/Beattie.png",
-            MaxHealth: 75,
-            CurrentHealth: 75,
+            MaxHealth: 65,
+            CurrentHealth: 65,
             Attack: 2,
             Defense: 8,
             TechAttack: 2,
@@ -139,7 +139,6 @@ namespace RacMonsters.Server.Repositories.Characters
             TechDefense: 3,
             AbilityIds: new[] { 33, 34, 35, 36 }
             ),
-
             new CharacterTemplate(
             Id: 10,
             Name: "Simon",
@@ -151,6 +150,54 @@ namespace RacMonsters.Server.Repositories.Characters
             TechAttack: 10,
             TechDefense: 8,
             AbilityIds: new[] { 37, 38, 39 ,40 }
+            ),
+            new CharacterTemplate(
+            Id: 11,
+            Name: "Paul",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Paul1.png" : "public/Paul1.png",
+            MaxHealth: 35,
+            CurrentHealth: 35,
+            Attack: 8,
+            Defense: 8,
+            TechAttack: 12,
+            TechDefense: 7,
+            AbilityIds: new[] { 41, 42, 43 ,44 }
+            ),
+            new CharacterTemplate(
+            Id: 12,
+            Name: "Charl",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Charl.png" : "public/Charl.png",
+            MaxHealth: 30,
+            CurrentHealth: 30,
+            Attack: 6,
+            Defense: 8,
+            TechAttack: 5,
+            TechDefense: 12,
+            AbilityIds: new[] { 45, 46, 47 ,48 }
+            ),
+            new CharacterTemplate(
+            Id: 13,
+            Name: "Barnes",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Barnes.png" : "public/Barnes.png",
+            MaxHealth: 35,
+            CurrentHealth: 35,
+            Attack: 7,
+            Defense: 8,
+            TechAttack: 4,
+            TechDefense: 4,
+            AbilityIds: new[] { 49, 50, 51 ,52 }
+            ),
+            new CharacterTemplate(
+            Id: 14,
+            Name: "Belassie",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Belassie.png" : "public/Belassie.png",
+            MaxHealth: 20,
+            CurrentHealth: 20,
+            Attack: 12,
+            Defense: 10,
+            TechAttack: 2,
+            TechDefense: 2,
+            AbilityIds: new[] { 53, 54, 55 ,56 }
             )
         };
 

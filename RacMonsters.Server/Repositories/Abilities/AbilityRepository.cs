@@ -36,7 +36,7 @@ namespace RacMonsters.Server.Repositories.Abilities
                 // JP
                 new Ability { Id = 17, Name = "User Research", Description = "Conducts user research to disprove your theory", IsTech = true, IsHeal = false, Power = 6, Speed = 8, Accuracy = 0.95 },
                 new Ability { Id = 18, Name = "Throw Miniature", Description = "Throws a freshly painted warhammer 40k space marine at your eyeball", IsTech = false, Power = 7, Speed = 8, Accuracy = 0.9 },
-                new Ability { Id = 19, Name = "Go Green", Description = "Gets high on the bud of life", IsTech = true, IsHeal = true, Power = 15, Speed = 5, Accuracy = 0.6 },
+                new Ability { Id = 19, Name = "Puff Puff Vape", Description = "Blows a phat cloud from his vape", IsTech = true, IsHeal = true, Power = 15, Speed = 5, Accuracy = 0.6 },
                 new Ability { Id = 20, Name = "Force feed dog turd", Description = "Force feed dog turd from this shoe into the opponents mouth", IsTech = false, IsHeal = false, Power = 12, Speed = 1, Accuracy = 0.6 },
 
                 // Langdon
@@ -68,6 +68,30 @@ namespace RacMonsters.Server.Repositories.Abilities
                 new Ability { Id = 38, Name = "Lie in", Description = "Have a nice lie in", IsTech = false, IsHeal = true, Power = 20, Speed = 4, Accuracy = 0.4 },
                 new Ability { Id = 39, Name = "Your Mom", Description = "Tells a your mom joke", IsTech = false, IsHeal = false, Power = 8, Speed = 5, Accuracy = 0.75 },
                 new Ability { Id = 40, Name = "Do the Washing", Description = "Forces opponent into doing his washing through online blackmail", IsTech = true, IsHeal = false, Power = 13, Speed = 4, Accuracy = 0.75},
+
+                // Paul
+                new Ability { Id = 41, Name = "Run Circles", Description = "He runs circles around you breaking your neck", IsTech = true, IsHeal = false, Power = 10, Speed = 6, Accuracy = 0.75 },
+                new Ability { Id = 42, Name = "Life Debug", Description = "Critiques your life choices in the biggest debug session", IsTech = true, IsHeal = false, Power = 20, Speed = 4, Accuracy = 0.4 },
+                new Ability { Id = 43, Name = "Lucazade Chug", Description = "Chugs lucazade to gain some energy", IsTech = true, IsHeal = true, Power = 10, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 44, Name = "Pay review", Description = "Gives you a pay review and informs you of a 15% decrease causing mental anguish", IsTech = true, IsHeal = false, Power = 13, Speed = 4, Accuracy = 0.75},
+
+                // Charl
+                new Ability { Id = 45, Name = "Sick em'", Description = "Robodog is set to attack mode eviscearting the closest muscle tissue", IsTech = true, IsHeal = false, Power = 9, Speed = 6, Accuracy = 0.75 },
+                new Ability { Id = 46, Name = "Brain Rewrite", Description = "Rewrites the opponent's brain causing major damage", IsTech = true, IsHeal = false, Power = 20, Speed = 4, Accuracy = 0.4 },
+                new Ability { Id = 47, Name = "Living on a Prayer", Description = "Sings bon jovi revitilizing her power", IsTech = false, IsHeal = true, Power = 11, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 48, Name = "Back handed slap", Description = "Slaps them in the face with back of the hand", IsTech = false, IsHeal = false, Power = 7, Speed = 4, Accuracy = 0.75},
+
+                // Barnes
+                new Ability { Id = 49, Name = "Man Overboard", Description = "The opponent is thrown overboard", IsTech = false, IsHeal = false, Power = 8, Speed = 6, Accuracy = 0.8 },
+                new Ability { Id = 50, Name = "Blackspot", Description = "You hand them the blackspot potentially causing a great sickness", IsTech = false, IsHeal = false, Power = 20, Speed = 4, Accuracy = 0.4 },
+                new Ability { Id = 51, Name = "Rum & Crackers", Description = "Eat rum and crackers with the other scallywags", IsTech = false, IsHeal = false, Power = 8, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 52, Name = "Patrol Move", Description = "Drops a patrol on your head through the quick patrol dispatch machine", IsTech = true, IsHeal = false, Power = 13, Speed = 3, Accuracy = 0.75},
+
+                // Belassie
+                new Ability { Id = 53, Name = "Roundhouse Kick", Description = "Delivers a powerful roundhouse kick", IsTech = false, IsHeal = false, Power = 10, Speed = 6, Accuracy = 0.6 },
+                new Ability { Id = 54, Name = "Quick attack", Description = "Gives a last minute request to attack", IsTech = false, IsHeal = false, Power = 6, Speed = 15, Accuracy = 0.9 },
+                new Ability { Id = 55, Name = "Drink a pint of wine", Description = "Enjoys a pint of wine to boost morale", IsTech = false, IsHeal = false, Power = 11, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 56, Name = "Transcribe Hell", Description = "Pulls up a log where you said something inappropriate causing you to visit HR", IsTech = true, IsHeal = false, Power = 11, Speed = 4, Accuracy = 0.75},
             };
 
             var result = abilities.Where(a => ids.Contains(a.Id)).ToArray();
