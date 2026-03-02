@@ -84,13 +84,13 @@ namespace RacMonsters.Server.Repositories.Abilities
                 // Barnes
                 new Ability { Id = 49, Name = "Man Overboard", Description = "The opponent is thrown overboard", IsTech = false, IsHeal = false, Power = 8, Speed = 6, Accuracy = 0.8 },
                 new Ability { Id = 50, Name = "Blackspot", Description = "You hand them the blackspot potentially causing a great sickness", IsTech = false, IsHeal = false, Power = 20, Speed = 4, Accuracy = 0.4 },
-                new Ability { Id = 51, Name = "Rum & Crackers", Description = "Eat rum and crackers with the other scallywags", IsTech = false, IsHeal = false, Power = 8, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 51, Name = "Rum & Crackers", Description = "Eat rum and crackers with the other scallywags", IsTech = false, IsHeal = true, Power = 8, Speed = 5, Accuracy = 0.75 },
                 new Ability { Id = 52, Name = "Patrol Move", Description = "Drops a patrol on your head through the quick patrol dispatch machine", IsTech = true, IsHeal = false, Power = 13, Speed = 3, Accuracy = 0.75},
 
                 // Belassie
                 new Ability { Id = 53, Name = "Roundhouse Kick", Description = "Delivers a powerful roundhouse kick", IsTech = false, IsHeal = false, Power = 10, Speed = 6, Accuracy = 0.6 },
                 new Ability { Id = 54, Name = "Quick attack", Description = "Gives a last minute request to attack", IsTech = false, IsHeal = false, Power = 6, Speed = 15, Accuracy = 0.9 },
-                new Ability { Id = 55, Name = "Drink a pint of wine", Description = "Enjoys a pint of wine to boost morale", IsTech = false, IsHeal = false, Power = 11, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 55, Name = "Drink a pint of wine", Description = "Enjoys a pint of wine to boost morale", IsTech = false, IsHeal = true, Power = 11, Speed = 5, Accuracy = 0.75 },
                 new Ability { Id = 56, Name = "Transcribe Hell", Description = "Pulls up a log where you said something inappropriate causing you to visit HR", IsTech = true, IsHeal = false, Power = 11, Speed = 4, Accuracy = 0.75},
             };
 
