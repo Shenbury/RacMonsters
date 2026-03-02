@@ -59,25 +59,12 @@ var app = builder.Build();
 // ensure DB created for sessions and run seeding
 using (var scope = app.Services.CreateScope())
 {
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<RacMonstersDbContext>();
-        logger.LogInformation("Applying database migrations...");
-        // Ensure database is created and apply migrations
-        db.Database.EnsureCreated(); // Creates DB if it doesn't exist
-        db.Database.Migrate();
-        logger.LogInformation("Database migrations applied successfully.");
+    var db = scope.ServiceProvider.GetRequiredService<RacMonstersDbContext>();
+    // apply migrations if present
+    await db.Database.MigrateAsync();
 
-        var seeder = scope.ServiceProvider.GetRequiredService<RacMonsters.Server.Data.DatabaseSeeder>();
-        await seeder.SeedAsync();
-        logger.LogInformation("Database seeding completed.");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
-        throw;
-    }
+    var seeder = scope.ServiceProvider.GetRequiredService<RacMonsters.Server.Data.DatabaseSeeder>();
+    await seeder.SeedAsync();
 }
 
 // Configure the HTTP request pipeline.
