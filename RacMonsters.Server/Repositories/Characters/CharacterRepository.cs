@@ -154,7 +154,7 @@ namespace RacMonsters.Server.Repositories.Characters
             new CharacterTemplate(
             Id: 11,
             Name: "Paul",
-            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Paul1.png" : "public/Paul1.png",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Paul2.png" : "public/Paul2.png",
             MaxHealth: 35,
             CurrentHealth: 35,
             Attack: 8,
@@ -198,6 +198,18 @@ namespace RacMonsters.Server.Repositories.Characters
             TechAttack: 2,
             TechDefense: 2,
             AbilityIds: new[] { 53, 54, 55 ,56 }
+            ),
+            new CharacterTemplate(
+            Id: 15,
+            Name: "Sailesh",
+            ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Sailesh.png" : "public/Sailesh.png",
+            MaxHealth: 50,
+            CurrentHealth: 50,
+            Attack: 7,
+            Defense: 4,
+            TechAttack: 10,
+            TechDefense: 8,
+            AbilityIds: new[] { 57, 58, 59 ,60 }
             )
         };
 

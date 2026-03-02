@@ -92,6 +92,12 @@ namespace RacMonsters.Server.Repositories.Abilities
                 new Ability { Id = 54, Name = "Quick attack", Description = "Gives a last minute request to attack", IsTech = false, IsHeal = false, Power = 6, Speed = 15, Accuracy = 0.9 },
                 new Ability { Id = 55, Name = "Drink a pint of wine", Description = "Enjoys a pint of wine to boost morale", IsTech = false, IsHeal = true, Power = 11, Speed = 5, Accuracy = 0.75 },
                 new Ability { Id = 56, Name = "Transcribe Hell", Description = "Pulls up a log where you said something inappropriate causing you to visit HR", IsTech = true, IsHeal = false, Power = 11, Speed = 4, Accuracy = 0.75},
+
+                // Sailesh
+                new Ability { Id = 57, Name = "Laptop Explosion Virus", Description = "Gives a compure virus destroying your tech equipment", IsTech = true, IsHeal = false, Power = 9, Speed = 6, Accuracy = 0.8 },
+                new Ability { Id = 58, Name = "Vibe Station", Description = "Vibes to the latest Swifty James", IsTech = true, IsHeal = true, Power = 6, Speed = 15, Accuracy = 0.9 },
+                new Ability { Id = 59, Name = "Swift Facial Redesign", Description = "Redesigns someones face with his fists", IsTech = false, IsHeal = false, Power = 11, Speed = 5, Accuracy = 0.75 },
+                new Ability { Id = 60, Name = "Chef Up a Storm", Description = "Created a swirling storm of meats and food", IsTech = true, IsHeal = false, Power = 8, Speed = 4, Accuracy = 0.75},
             };
 
             var result = abilities.Where(a => ids.Contains(a.Id)).ToArray();
