@@ -34,8 +34,8 @@ namespace RacMonsters.Server.Repositories.Abilities
                 new Ability { Id = 16, Name = "Bad Horror Movie", Description = "Preaches about a new FE Package derailing your workflow", IsTech = false, IsHeal = false, Power = 7, Speed = 1, Accuracy = 0.8 },
                 
                 // JP
-                new Ability { Id = 17, Name = "User Research", Description = "Conducts user research to disprove your theory", IsTech = true, IsHeal = false, Power = 6, Speed = 8, Accuracy = 0.95 },
-                new Ability { Id = 18, Name = "Throw Miniature", Description = "Throws a freshly painted warhammer 40k space marine at your eyeball", IsTech = false, Power = 7, Speed = 8, Accuracy = 0.9 },
+                new Ability { Id = 17, Name = "User Research", Description = "Conducts user research to disprove your theory", IsTech = true, IsHeal = false, Power = 9, Speed = 7, Accuracy = 0.95 },
+                new Ability { Id = 18, Name = "Throw Miniature", Description = "Throws a freshly painted warhammer 40k space marine at your eyeball", IsTech = false, Power = 10, Speed = 8, Accuracy = 0.9 },
                 new Ability { Id = 19, Name = "Puff Puff Vape", Description = "Blows a phat cloud from his vape", IsTech = true, IsHeal = true, Power = 15, Speed = 5, Accuracy = 0.6 },
                 new Ability { Id = 20, Name = "Force feed dog turd", Description = "Force feed dog turd from this shoe into the opponents mouth", IsTech = false, IsHeal = false, Power = 12, Speed = 1, Accuracy = 0.6 },
 
