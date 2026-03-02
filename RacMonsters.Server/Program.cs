@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using RacMonsters.Server.Data;
 using RacMonsters.Server.Repositories.Characters;
 using RacMonsters.Server.Repositories.Abilities;
@@ -41,6 +42,9 @@ builder.Services.AddScoped<RacMonsters.Server.Services.Leaderboard.ILeaderboardS
 builder.Services.AddScoped<ISessionRepository, RacMonsters.Server.Repositories.Sessions.SqlSessionRepository>();
 builder.Services.AddScoped<IRoundRepository, RoundRepository>();
 
+// seeder
+builder.Services.AddScoped<RacMonsters.Server.Data.DatabaseSeeder>();
+
 // services
 builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IAbilityService, AbilityService>();
@@ -52,12 +56,15 @@ builder.Services.AddScoped<IAIService, AIService>();
 
 var app = builder.Build();
 
-// ensure DB created for sessions
+// ensure DB created for sessions and run seeding
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<RacMonstersDbContext>();
     // apply migrations if present
     db.Database.Migrate();
+
+    var seeder = scope.ServiceProvider.GetRequiredService<RacMonsters.Server.Data.DatabaseSeeder>();
+    await seeder.SeedAsync();
 }
 
 // Configure the HTTP request pipeline.

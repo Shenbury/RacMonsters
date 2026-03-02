@@ -1,18 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using RacMonsters.Server.Data;
 using RacMonsters.Server.Models;
-using System.Text.Json;
+using RacMonsters.Server.Repositories.Characters;
+using RacMonsters.Server.Repositories.Abilities;
 
 namespace RacMonsters.Server.Repositories.Sessions
 {
     public class SqlSessionRepository : ISessionRepository
     {
         private readonly RacMonstersDbContext _db;
-        private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
+        private readonly ICharacterRepository _characterRepo;
+        private readonly IAbilityRepository _abilityRepo;
 
-        public SqlSessionRepository(RacMonstersDbContext db)
+        public SqlSessionRepository(RacMonstersDbContext db, ICharacterRepository characterRepo, IAbilityRepository abilityRepo)
         {
             _db = db;
+            _characterRepo = characterRepo;
+            _abilityRepo = abilityRepo;
         }
 
         public async Task<Session> CreateSession(Session createSession)
@@ -31,9 +35,9 @@ namespace RacMonsters.Server.Repositories.Sessions
                     var be = new BattleEntity
                     {
                         SessionId = entity.Id,
-                        CharacterAJson = JsonSerializer.Serialize(b.CharacterA, _jsonOptions),
-                        CharacterBJson = JsonSerializer.Serialize(b.CharacterB, _jsonOptions),
-                        WinningCharacter = b.WinningCharacter
+                        CharacterAId = b.CharacterA.Id,
+                        CharacterBId = b.CharacterB.Id,
+                        WinningCharacterId = null
                     };
                     _db.Battles.Add(be);
                     await _db.SaveChangesAsync();
@@ -45,8 +49,19 @@ namespace RacMonsters.Server.Repositories.Sessions
                             var re = new RoundEntity
                             {
                                 BattleId = be.Id,
-                                PlayerAJson = JsonSerializer.Serialize(r.PlayerA, _jsonOptions),
-                                PlayerBJson = JsonSerializer.Serialize(r.PlayerB, _jsonOptions)
+                                PlayerACharacterId = r.PlayerA.Character.Id,
+                                PlayerAAbilityId = r.PlayerA.Ability.Id,
+                                PlayerAHit = r.PlayerA.Hit,
+                                PlayerAResultMessage = r.PlayerA.ResultMessage,
+                                PlayerADamage = r.PlayerA.Damage,
+                                PlayerAHealAmount = r.PlayerA.HealAmount,
+
+                                PlayerBCharacterId = r.PlayerB.Character.Id,
+                                PlayerBAbilityId = r.PlayerB.Ability.Id,
+                                PlayerBHit = r.PlayerB.Hit,
+                                PlayerBResultMessage = r.PlayerB.ResultMessage,
+                                PlayerBDamage = r.PlayerB.Damage,
+                                PlayerBHealAmount = r.PlayerB.HealAmount
                             };
                             _db.Rounds.Add(re);
                         }
@@ -63,6 +78,10 @@ namespace RacMonsters.Server.Repositories.Sessions
             var e = await _db.Sessions
                 .Include(s => s.Battles)
                     .ThenInclude(b => b.Rounds)
+                .Include(s => s.Battles)
+                    .ThenInclude(b => b.CharacterA)
+                .Include(s => s.Battles)
+                    .ThenInclude(b => b.CharacterB)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
 
             if (e == null) return null!;
@@ -72,18 +91,50 @@ namespace RacMonsters.Server.Repositories.Sessions
 
             foreach (var be in e.Battles.OrderBy(b => b.Id))
             {
+                // load characters via character repository to include abilities
+                var charA = await _characterRepo.GetCharacter(be.CharacterAId);
+                var charB = await _characterRepo.GetCharacter(be.CharacterBId);
+
+                var rounds = new List<Round>();
+                foreach (var re in be.Rounds.OrderBy(r => r.Id))
+                {
+                    var playerAAbility = await _abilityRepo.GetAbilities(new[] { re.PlayerAAbilityId });
+                    var playerBAbility = await _abilityRepo.GetAbilities(new[] { re.PlayerBAbilityId });
+
+                    var round = new Round
+                    {
+                        Id = re.Id,
+                        PlayerA = new RoundAction
+                        {
+                            Character = charA,
+                            Ability = playerAAbility.FirstOrDefault()!,
+                            Hit = re.PlayerAHit,
+                            ResultMessage = re.PlayerAResultMessage,
+                            Damage = re.PlayerADamage,
+                            HealAmount = re.PlayerAHealAmount
+                        },
+                        PlayerB = new RoundAction
+                        {
+                            Character = charB,
+                            Ability = playerBAbility.FirstOrDefault()!,
+                            Hit = re.PlayerBHit,
+                            ResultMessage = re.PlayerBResultMessage,
+                            Damage = re.PlayerBDamage,
+                            HealAmount = re.PlayerBHealAmount
+                        }
+                    };
+
+                    rounds.Add(round);
+                }
+
                 var battle = new Battle
                 {
                     Id = be.Id,
-                    CharacterA = JsonSerializer.Deserialize<Character>(be.CharacterAJson, _jsonOptions)!,
-                    CharacterB = JsonSerializer.Deserialize<Character>(be.CharacterBJson, _jsonOptions)!,
-                    WinningCharacter = be.WinningCharacter,
-                    Rounds = be.Rounds.OrderBy(r => r.Id).Select(re => JsonSerializer.Deserialize<Round>("{\"PlayerA\":" + re.PlayerAJson + ",\"PlayerB\":" + re.PlayerBJson + "}", _jsonOptions)!).ToArray()
+                    CharacterA = charA,
+                    CharacterB = charB,
+                    WinningCharacter = be.WinningCharacterEntity != null ? be.WinningCharacterEntity.Name : null,
+                    Rounds = rounds.ToArray()
                 };
-
-                // Because Round deserialization above expects a Round object with PlayerA and PlayerB as RoundAction,
-                // ensure PlayerA/PlayerB are deserialized correctly by manually constructing if needed.
-                // The simple approach above concatenates JSON snippets into a Round-shaped JSON.
 
                 battles.Add(battle);
             }
@@ -126,9 +177,9 @@ namespace RacMonsters.Server.Repositories.Sessions
                     var be = new BattleEntity
                     {
                         SessionId = existing.Id,
-                        CharacterAJson = JsonSerializer.Serialize(b.CharacterA, _jsonOptions),
-                        CharacterBJson = JsonSerializer.Serialize(b.CharacterB, _jsonOptions),
-                        WinningCharacter = b.WinningCharacter
+                        CharacterAId = b.CharacterA.Id,
+                        CharacterBId = b.CharacterB.Id,
+                        WinningCharacterId = null
                     };
                     _db.Battles.Add(be);
                     await _db.SaveChangesAsync();
@@ -140,8 +191,19 @@ namespace RacMonsters.Server.Repositories.Sessions
                             var re = new RoundEntity
                             {
                                 BattleId = be.Id,
-                                PlayerAJson = JsonSerializer.Serialize(r.PlayerA, _jsonOptions),
-                                PlayerBJson = JsonSerializer.Serialize(r.PlayerB, _jsonOptions)
+                                PlayerACharacterId = r.PlayerA.Character.Id,
+                                PlayerAAbilityId = r.PlayerA.Ability.Id,
+                                PlayerAHit = r.PlayerA.Hit,
+                                PlayerAResultMessage = r.PlayerA.ResultMessage,
+                                PlayerADamage = r.PlayerA.Damage,
+                                PlayerAHealAmount = r.PlayerA.HealAmount,
+
+                                PlayerBCharacterId = r.PlayerB.Character.Id,
+                                PlayerBAbilityId = r.PlayerB.Ability.Id,
+                                PlayerBHit = r.PlayerB.Hit,
+                                PlayerBResultMessage = r.PlayerB.ResultMessage,
+                                PlayerBDamage = r.PlayerB.Damage,
+                                PlayerBHealAmount = r.PlayerB.HealAmount
                             };
                             _db.Rounds.Add(re);
                         }

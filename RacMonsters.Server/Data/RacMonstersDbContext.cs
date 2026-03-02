@@ -18,10 +18,16 @@ namespace RacMonsters.Server.Data
         public int SessionId { get; set; }
         public SessionEntity? Session { get; set; }
 
-        // store characters as JSON to avoid complex relational mapping for characters
-        public string CharacterAJson { get; set; } = string.Empty;
-        public string CharacterBJson { get; set; } = string.Empty;
-        public string? WinningCharacter { get; set; }
+        // normalized character references
+        public int CharacterAId { get; set; }
+        public CharacterEntity? CharacterA { get; set; }
+
+        public int CharacterBId { get; set; }
+        public CharacterEntity? CharacterB { get; set; }
+
+        // optionally reference the winning character by id
+        public int? WinningCharacterId { get; set; }
+        public CharacterEntity? WinningCharacterEntity { get; set; }
 
         public ICollection<RoundEntity> Rounds { get; set; } = new List<RoundEntity>();
     }
@@ -33,9 +39,25 @@ namespace RacMonsters.Server.Data
         public int BattleId { get; set; }
         public BattleEntity? Battle { get; set; }
 
-        // store actions as JSON to preserve action details
-        public string PlayerAJson { get; set; } = string.Empty;
-        public string PlayerBJson { get; set; } = string.Empty;
+        // normalized action fields for Player A
+        public int PlayerACharacterId { get; set; }
+        public CharacterEntity? PlayerACharacter { get; set; }
+        public int PlayerAAbilityId { get; set; }
+        public AbilityEntity? PlayerAAbility { get; set; }
+        public bool? PlayerAHit { get; set; }
+        public string? PlayerAResultMessage { get; set; }
+        public int? PlayerADamage { get; set; }
+        public int? PlayerAHealAmount { get; set; }
+
+        // normalized action fields for Player B
+        public int PlayerBCharacterId { get; set; }
+        public CharacterEntity? PlayerBCharacter { get; set; }
+        public int PlayerBAbilityId { get; set; }
+        public AbilityEntity? PlayerBAbility { get; set; }
+        public bool? PlayerBHit { get; set; }
+        public string? PlayerBResultMessage { get; set; }
+        public int? PlayerBDamage { get; set; }
+        public int? PlayerBHealAmount { get; set; }
     }
 
     public class LeaderboardEntity
@@ -49,6 +71,46 @@ namespace RacMonsters.Server.Data
         public DateTime Timestamp { get; set; }
     }
 
+    public class AbilityEntity
+    {
+        [Key]
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public bool IsTech { get; set; }
+        public bool IsHeal { get; set; }
+        public int Power { get; set; }
+        public int Speed { get; set; }
+        public double Accuracy { get; set; }
+
+        public ICollection<CharacterAbilityEntity> CharacterAbilities { get; set; } = new List<CharacterAbilityEntity>();
+    }
+
+    public class CharacterEntity
+    {
+        [Key]
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
+        public int MaxHealth { get; set; }
+        public int CurrentHealth { get; set; }
+        public int Attack { get; set; }
+        public int Defense { get; set; }
+        public int TechAttack { get; set; }
+        public int TechDefense { get; set; }
+
+        public ICollection<CharacterAbilityEntity> CharacterAbilities { get; set; } = new List<CharacterAbilityEntity>();
+    }
+
+    public class CharacterAbilityEntity
+    {
+        public int CharacterId { get; set; }
+        public CharacterEntity? Character { get; set; }
+
+        public int AbilityId { get; set; }
+        public AbilityEntity? Ability { get; set; }
+    }
+
     public class RacMonstersDbContext : DbContext
     {
         public RacMonstersDbContext(DbContextOptions<RacMonstersDbContext> options) : base(options)
@@ -59,6 +121,9 @@ namespace RacMonsters.Server.Data
         public DbSet<BattleEntity> Battles { get; set; } = null!;
         public DbSet<RoundEntity> Rounds { get; set; } = null!;
         public DbSet<LeaderboardEntity> Leaderboard { get; set; } = null!;
+        public DbSet<AbilityEntity> Abilities { get; set; } = null!;
+        public DbSet<CharacterEntity> Characters { get; set; } = null!;
+        public DbSet<CharacterAbilityEntity> CharacterAbilities { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -72,19 +137,59 @@ namespace RacMonsters.Server.Data
             {
                 eb.ToTable("Battles");
                 eb.HasKey(e => e.Id);
-                eb.Property(e => e.CharacterAJson).HasColumnType("nvarchar(max)");
-                eb.Property(e => e.CharacterBJson).HasColumnType("nvarchar(max)");
-                eb.Property(e => e.WinningCharacter).HasColumnType("nvarchar(200)");
+                eb.Property(e => e.WinningCharacterId).IsRequired(false);
                 eb.HasOne(e => e.Session).WithMany(s => s.Battles).HasForeignKey(e => e.SessionId).OnDelete(DeleteBehavior.Cascade);
+                eb.HasOne(e => e.CharacterA).WithMany().HasForeignKey(e => e.CharacterAId).OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(e => e.CharacterB).WithMany().HasForeignKey(e => e.CharacterBId).OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(e => e.WinningCharacterEntity).WithMany().HasForeignKey(e => e.WinningCharacterId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<RoundEntity>(eb =>
             {
                 eb.ToTable("Rounds");
                 eb.HasKey(e => e.Id);
-                eb.Property(e => e.PlayerAJson).HasColumnType("nvarchar(max)");
-                eb.Property(e => e.PlayerBJson).HasColumnType("nvarchar(max)");
+                eb.Property(e => e.PlayerAResultMessage).HasColumnType("nvarchar(max)");
+                eb.Property(e => e.PlayerBResultMessage).HasColumnType("nvarchar(max)");
                 eb.HasOne(e => e.Battle).WithMany(b => b.Rounds).HasForeignKey(e => e.BattleId).OnDelete(DeleteBehavior.Cascade);
+                eb.HasOne(e => e.PlayerACharacter).WithMany().HasForeignKey(e => e.PlayerACharacterId).OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(e => e.PlayerBCharacter).WithMany().HasForeignKey(e => e.PlayerBCharacterId).OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(e => e.PlayerAAbility).WithMany().HasForeignKey(e => e.PlayerAAbilityId).OnDelete(DeleteBehavior.Restrict);
+                eb.HasOne(e => e.PlayerBAbility).WithMany().HasForeignKey(e => e.PlayerBAbilityId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<AbilityEntity>(eb =>
+            {
+                eb.ToTable("Abilities");
+                eb.HasKey(e => e.Id);
+                eb.Property(e => e.Name).HasColumnType("nvarchar(200)");
+                eb.Property(e => e.Description).HasColumnType("nvarchar(max)");
+                eb.Property(e => e.IsTech);
+                eb.Property(e => e.IsHeal);
+                eb.Property(e => e.Power);
+                eb.Property(e => e.Speed);
+                eb.Property(e => e.Accuracy).HasColumnType("float");
+            });
+
+            modelBuilder.Entity<CharacterEntity>(eb =>
+            {
+                eb.ToTable("Characters");
+                eb.HasKey(e => e.Id);
+                eb.Property(e => e.Name).HasColumnType("nvarchar(200)");
+                eb.Property(e => e.ImageUrl).HasColumnType("nvarchar(500)");
+                eb.Property(e => e.MaxHealth);
+                eb.Property(e => e.CurrentHealth);
+                eb.Property(e => e.Attack);
+                eb.Property(e => e.Defense);
+                eb.Property(e => e.TechAttack);
+                eb.Property(e => e.TechDefense);
+            });
+
+            modelBuilder.Entity<CharacterAbilityEntity>(eb =>
+            {
+                eb.ToTable("CharacterAbilities");
+                eb.HasKey(e => new { e.CharacterId, e.AbilityId });
+                eb.HasOne(ca => ca.Character).WithMany(c => c.CharacterAbilities).HasForeignKey(ca => ca.CharacterId).OnDelete(DeleteBehavior.Cascade);
+                eb.HasOne(ca => ca.Ability).WithMany(a => a.CharacterAbilities).HasForeignKey(ca => ca.AbilityId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<LeaderboardEntity>(eb =>
