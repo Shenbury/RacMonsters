@@ -39,7 +39,7 @@ namespace RacMonsters.Server.Repositories.Characters
             CurrentHealth: 50,
             Attack: 6,
             Defense: 6,
-            TechAttack: 3,
+            TechAttack: 5,
             TechDefense: 5,
             AbilityIds: new[] { 1, 2, 3, 4 }
             ),
@@ -50,7 +50,7 @@ namespace RacMonsters.Server.Repositories.Characters
             MaxHealth: 35,
             CurrentHealth: 35,
             Attack: 5,
-            Defense: 3,
+            Defense: 5,
             TechAttack: 11,
             TechDefense: 7,
             AbilityIds: new[] { 5, 6, 7, 8 }
@@ -85,10 +85,10 @@ namespace RacMonsters.Server.Repositories.Characters
             ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "JP.png" : "public/JP.png",
             MaxHealth: 45,
             CurrentHealth: 45,
-            Attack: 5,
-            Defense: 5,
-            TechAttack: 5,
-            TechDefense: 5,
+            Attack: 8,
+            Defense: 8,
+            TechAttack: 6,
+            TechDefense: 7,
             AbilityIds: new[] { 17, 18, 19, 20 }
             ),
             new CharacterTemplate(
@@ -143,8 +143,8 @@ namespace RacMonsters.Server.Repositories.Characters
             Id: 10,
             Name: "Simon",
             ImageUrl: RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Simon.png" : "public/Simon.png",
-            MaxHealth: 50,
-            CurrentHealth: 50,
+            MaxHealth: 40,
+            CurrentHealth: 40,
             Attack: 5,
             Defense: 9,
             TechAttack: 10,
