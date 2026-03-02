@@ -4,8 +4,8 @@ import './App.css'
 
 // Music files located in public/music. Update this list if you add/remove songs.
 const SONG_FILENAMES = [
-    'RAC Battle Theme(1).mp3',
     'Breakdown Battle Royale.mp3',
+    'RAC Battle Theme(1).mp3',
     'RAC Battle Theme(2).mp3',
     'RAC Battle Theme(3).mp3',
     'RAC Battle Theme.mp3'
@@ -78,6 +78,7 @@ const App: React.FC = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const [trackIndex, setTrackIndex] = useState<number>(0)
     const [isPlaying, setIsPlaying] = useState<boolean>(false)
+    const [volume, setVolume] = useState<number>(0.8)
     const tracks = SONG_FILENAMES.map(n => `/music/${encodeURIComponent(n)}`)
 
     const fetchLeaderboard = async (limit = 50) => {
@@ -129,6 +130,11 @@ const App: React.FC = () => {
         const storedName = localStorage.getItem('rac-player-name')
         if (storedName) setPlayerName(storedName)
         if (storedName) setNameSaved(true)
+        const storedVol = localStorage.getItem('rac-volume')
+        if (storedVol != null) {
+            const v = parseFloat(storedVol)
+            if (!Number.isNaN(v) && v >= 0 && v <= 1) setVolume(v)
+        }
     }, [])
 
     // Initialize audio element once
@@ -136,12 +142,14 @@ const App: React.FC = () => {
         if (tracks.length === 0) return
         const audio = new Audio(tracks[trackIndex])
         audio.preload = 'auto'
+        audio.volume = volume
         audioRef.current = audio
 
         const onEnded = () => {
-            // auto-advance
-            setIsPlaying(false)
+            // auto-advance and resume playback on the next track
             setTrackIndex(i => (i + 1) % tracks.length)
+            // mark playing so the trackIndex effect will attempt to play the new src
+            setIsPlaying(true)
         }
 
         audio.addEventListener('ended', onEnded)
@@ -176,6 +184,18 @@ const App: React.FC = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [trackIndex])
+
+    // keep volume in sync with audio element
+    useEffect(() => {
+        const audio = audioRef.current
+        if (!audio) return
+        audio.volume = volume
+        try {
+            localStorage.setItem('rac-volume', String(volume))
+        } catch {
+            // ignore storage errors
+        }
+    }, [volume])
 
     // keep play/pause in sync
     useEffect(() => {
@@ -530,6 +550,18 @@ const App: React.FC = () => {
                 </div>
                 <div className="music-info">
                     <div className="track-name">{decodeURIComponent(tracks[trackIndex].split('/').pop() ?? '')}</div>
+                    <div className="volume-control" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                        <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={volume}
+                            onChange={e => setVolume(parseFloat(e.target.value))}
+                            aria-label="Volume"
+                        />
+                        <div style={{ minWidth: 40, textAlign: 'right' }} aria-hidden>{Math.round(volume * 100)}%</div>
+                    </div>
                 </div>
             </div>
 
