@@ -23,7 +23,6 @@ const HEAL_SOUND_FILENAMES = [
 const DEFEAT_SOUND_FILENAMES = [
     'smack.mp3',
     'whip.mp3',
-    'yeet.mp3',
     'EmoDamage.mp3'
 ]
 

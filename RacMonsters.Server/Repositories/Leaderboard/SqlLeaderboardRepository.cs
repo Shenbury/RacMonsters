@@ -27,6 +27,7 @@ namespace RacMonsters.Server.Repositories.Leaderboard
         public async Task<IEnumerable<LeaderboardEntry>> GetTop(int limit)
         {
             return await _db.Leaderboard
+                .Where(l => l.Score > 0)
                 .OrderByDescending(l => l.Score)
                 .ThenBy(l => l.Timestamp)
                 .Take(limit)
