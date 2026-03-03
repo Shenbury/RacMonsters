@@ -108,23 +108,23 @@ namespace RacMonsters.Server.Data
             {
                 var characters = new[]
                 {
-                    new CharacterEntity { Id = 1, Name = "Ashley", ImageUrl = "public/Ashley.png", MaxHealth = 50, CurrentHealth = 50, Attack = 6, Defense = 6, TechAttack = 5, TechDefense = 5 },
+                    new CharacterEntity { Id = 1, Name = "Ashley", ImageUrl = "public/Ashley.png", MaxHealth = 52, CurrentHealth = 52, Attack = 8, Defense = 8, TechAttack = 7, TechDefense = 7 },
                     new CharacterEntity { Id = 2, Name = "Banbury", ImageUrl = "public/Banbury.png", MaxHealth = 40, CurrentHealth = 40, Attack = 6, Defense = 6, TechAttack = 11, TechDefense = 7 },
                     new CharacterEntity { Id = 3, Name = "Beattie", ImageUrl = "public/Beattie.png", MaxHealth = 55, CurrentHealth = 55, Attack = 4, Defense = 8, TechAttack = 3, TechDefense = 5 },
-                    new CharacterEntity { Id = 4, Name = "Faisal", ImageUrl = "public/Faisal.png", MaxHealth = 52, CurrentHealth = 52, Attack = 8, Defense = 8, TechAttack = 7, TechDefense = 8 },
-                    new CharacterEntity { Id = 5, Name = "JP", ImageUrl = "public/JP.png", MaxHealth = 45, CurrentHealth = 45, Attack = 10, Defense = 8, TechAttack = 6, TechDefense = 7 },
+                    new CharacterEntity { Id = 4, Name = "Faisal", ImageUrl = "public/Faisal.png", MaxHealth = 56, CurrentHealth = 56, Attack = 10, Defense = 10, TechAttack = 9, TechDefense = 10 },
+                    new CharacterEntity { Id = 5, Name = "JP", ImageUrl = "public/JP.png", MaxHealth = 50, CurrentHealth = 50, Attack = 13, Defense = 10, TechAttack = 8, TechDefense = 9 },
                     new CharacterEntity { Id = 6, Name = "Langdon", ImageUrl = "public/Langdon.png", MaxHealth = 48, CurrentHealth = 48, Attack = 7, Defense = 10, TechAttack = 3, TechDefense = 6 },
-                    new CharacterEntity { Id = 7, Name = "Lilley", ImageUrl = "public/Lilley.png", MaxHealth = 45, CurrentHealth = 45, Attack = 9, Defense = 7, TechAttack = 5, TechDefense = 5 },
+                    new CharacterEntity { Id = 7, Name = "Lilley", ImageUrl = "public/Lilley.png", MaxHealth = 48, CurrentHealth = 48, Attack = 10, Defense = 9, TechAttack = 7, TechDefense = 7 },
                     new CharacterEntity { Id = 8, Name = "Nunan", ImageUrl = "public/Nunan.png", MaxHealth = 38, CurrentHealth = 38, Attack = 4, Defense = 4, TechAttack = 12, TechDefense = 8 },
-                    new CharacterEntity { Id = 9, Name = "Sam", ImageUrl = "public/Sam.png", MaxHealth = 43, CurrentHealth = 43, Attack = 10, Defense = 7, TechAttack = 5, TechDefense = 4 },
-                    new CharacterEntity { Id = 10, Name = "Simon", ImageUrl = "public/Simon.png", MaxHealth = 44, CurrentHealth = 44, Attack = 5, Defense = 9, TechAttack = 12, TechDefense = 8 },
-                    new CharacterEntity { Id = 11, Name = "Paul", ImageUrl = "public/Paul2.png", MaxHealth = 42, CurrentHealth = 42, Attack = 8, Defense = 8, TechAttack = 10, TechDefense = 7 },
-                    new CharacterEntity { Id = 12, Name = "Charl", ImageUrl = "public/Charl.png", MaxHealth = 42, CurrentHealth = 42, Attack = 7, Defense = 8, TechAttack = 6, TechDefense = 12 },
-                    new CharacterEntity { Id = 13, Name = "Barnes", ImageUrl = "public/Barnes.png", MaxHealth = 42, CurrentHealth = 42, Attack = 8, Defense = 8, TechAttack = 6, TechDefense = 6 },
+                    new CharacterEntity { Id = 9, Name = "Sam", ImageUrl = "public/Sam.png", MaxHealth = 43, CurrentHealth = 43, Attack = 9, Defense = 8, TechAttack = 6, TechDefense = 5 },
+                    new CharacterEntity { Id = 10, Name = "Simon", ImageUrl = "public/Simon.png", MaxHealth = 52, CurrentHealth = 52, Attack = 7, Defense = 10, TechAttack = 14, TechDefense = 10 },
+                    new CharacterEntity { Id = 11, Name = "Paul", ImageUrl = "public/Paul2.png", MaxHealth = 40, CurrentHealth = 40, Attack = 7, Defense = 7, TechAttack = 8, TechDefense = 6 },
+                    new CharacterEntity { Id = 12, Name = "Charl", ImageUrl = "public/Charl.png", MaxHealth = 40, CurrentHealth = 40, Attack = 6, Defense = 7, TechAttack = 5, TechDefense = 10 },
+                    new CharacterEntity { Id = 13, Name = "Barnes", ImageUrl = "public/Barnes.png", MaxHealth = 46, CurrentHealth = 46, Attack = 9, Defense = 9, TechAttack = 8, TechDefense = 8 },
                     new CharacterEntity { Id = 14, Name = "Belassie", ImageUrl = "public/Belassie.png", MaxHealth = 35, CurrentHealth = 35, Attack = 12, Defense = 9, TechAttack = 5, TechDefense = 5 },
                     new CharacterEntity { Id = 15, Name = "Sailesh", ImageUrl = "public/Sailesh.png", MaxHealth = 48, CurrentHealth = 48, Attack = 8, Defense = 5, TechAttack = 10, TechDefense = 8 },
                     new CharacterEntity { Id = 16, Name = "Andy", ImageUrl = "public/Andy.png", MaxHealth = 46, CurrentHealth = 46, Attack = 4, Defense = 10, TechAttack = 11, TechDefense = 7 },
-                    new CharacterEntity { Id = 17, Name = "Aaron", ImageUrl = "public/Aaron.png", MaxHealth = 40, CurrentHealth = 40, Attack = 12, Defense = 4, TechAttack = 7, TechDefense = 5 }
+                    new CharacterEntity { Id = 17, Name = "Aaron", ImageUrl = "public/Aaron.png", MaxHealth = 44, CurrentHealth = 44, Attack = 13, Defense = 7, TechAttack = 8, TechDefense = 7 }
                 };
 
                 // Characters table uses identity on Id; enable IDENTITY_INSERT to allow explicit Ids in seed
