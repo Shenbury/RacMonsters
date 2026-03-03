@@ -27,7 +27,7 @@ const DEFEAT_SOUND_FILENAMES = [
     'EmoDamage.mp3'
 ]
 
-type GameState = 'start' | 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard'
+type GameState = 'start' | 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard' | 'transition'
 
 /**
  * Minimal shapes inferred from usage in the component.
@@ -102,13 +102,23 @@ const App: React.FC = () => {
     const [hasInteracted, setHasInteracted] = useState<boolean>(false)
     const tracks = SONG_FILENAMES.map(n => `/music/${encodeURIComponent(n)}`)
 
+    const doNothing = async () => {
+        {
+            console.log(setNextEnemy);
+            console.log(setDefeatedEnemy);
+            console.log(opponents);
+            console.log(nameSaved);
+        }
+    }
+
+    doNothing();
+
     const fetchLeaderboard = async (limit = 50) => {
         try {
             const res = await fetch(`/api/leaderboard/top?limit=${limit}`)
             if (!res.ok) return
             const data = await res.json()
             setLeaderboard(Array.isArray(data) ? data : [])
-            console.log(leaderboard);
         } catch {
             // ignore
         }
