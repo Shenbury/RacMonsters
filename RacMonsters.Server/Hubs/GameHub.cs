@@ -86,8 +86,10 @@ namespace RacMonsters.Server.Hubs
                 }
                 else
                 {
-                    // Only one player has selected - just acknowledge to the caller
-                    // The result already has the correct perspective for the caller
+                    // Only one player has selected - acknowledge to the caller and notify opponent
+                    var isPlayer1 = connectionId == battle.Player1ConnectionId;
+
+                    // Send acknowledgement to the player who just selected
                     await Clients.Caller.SendAsync("TurnProcessed", new 
                     {
                         battleId = result.BattleId,
@@ -99,6 +101,17 @@ namespace RacMonsters.Server.Hubs
                         message = result.Message,
                         triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
                         triggeringPlayerName = result.TriggeringPlayerName
+                    });
+
+                    // Notify the opponent that the other player is waiting
+                    var opponentConnectionId = isPlayer1 ? battle.Player2ConnectionId : battle.Player1ConnectionId;
+                    var opponentMessage = $"{result.TriggeringPlayerName} has selected their ability. Waiting for you...";
+
+                    await Clients.Client(opponentConnectionId!).SendAsync("OpponentReady", new
+                    {
+                        battleId = result.BattleId,
+                        message = opponentMessage,
+                        opponentName = result.TriggeringPlayerName
                     });
                 }
             }

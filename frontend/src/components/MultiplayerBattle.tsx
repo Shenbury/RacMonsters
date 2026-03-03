@@ -49,9 +49,16 @@ export function MultiplayerBattle({
 
             setMessage(result.message || '');
             setBattleLog(prev => [result.message || 'Turn processed', ...prev].slice(0, 10));
-            setIsProcessing(false);
-            setIsWaitingForOpponent(false);
-            setSelectedAbility(null);
+
+            // Check if a round was actually processed
+            if (result.lastRound != null) {
+                // Round was processed - reset everything for next turn
+                setIsProcessing(false);
+                setIsWaitingForOpponent(false);
+                setSelectedAbility(null);
+            }
+            // If lastRound is null, it's just an acknowledgment
+            // The waiting state should remain true, so don't change it
 
             if (result.isGameOver) {
                 const won = result.playerCharacter.currentHealth > 0;
@@ -59,6 +66,12 @@ export function MultiplayerBattle({
                 setBattleLog(prev => [gameOverMsg, ...prev].slice(0, 10));
                 setTimeout(() => onBattleEnd(won), 3000);
             }
+        });
+
+        signalRService.onOpponentReady((data: { battleId: number; message: string; opponentName: string }) => {
+            console.log('Opponent ready:', data);
+            setMessage(data.message);
+            setBattleLog(prev => [data.message, ...prev].slice(0, 10));
         });
 
         signalRService.onTurnTimeout((msg: string) => {
@@ -75,6 +88,7 @@ export function MultiplayerBattle({
 
         return () => {
             signalRService.offTurnProcessed();
+            signalRService.offOpponentReady();
             signalRService.offTurnTimeout();
             signalRService.offError();
         };
@@ -84,12 +98,12 @@ export function MultiplayerBattle({
         if (isProcessing || isWaitingForOpponent) return;
 
         setIsProcessing(true);
+        setIsWaitingForOpponent(true);
         setSelectedAbility(abilityId);
         setMessage('Ability selected! Waiting for opponent...');
 
         try {
             await signalRService.selectAbility(battleId, abilityId);
-            setIsWaitingForOpponent(true);
             setIsProcessing(false);
         } catch (error) {
             console.error('Error selecting ability:', error);
@@ -285,8 +299,8 @@ export function MultiplayerBattle({
 
             {battleState?.isGameOver && (
                 <div className="game-over">
-                    <h2>{battleState.winner === 'player1' || battleState.winner === 'player2' ? '🏆 Victory!' : '💀 Defeat!'}</h2>
-                    <p className="game-over-message">{battleState.message}</p>
+                    <h2>{playerChar.currentHealth > 0 ? '🏆 Victory!' : '💀 Defeat!'}</h2>
+                    <p className="game-over-message">{playerChar.currentHealth > 0 ? 'You won the battle!' : 'Better luck next time!'}</p>
                     <p className="game-over-info">Returning to mode selection...</p>
                 </div>
             )}

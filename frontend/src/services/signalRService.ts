@@ -127,6 +127,13 @@ class SignalRService {
         });
     }
 
+    onOpponentReady(callback: (data: { battleId: number; message: string; opponentName: string }) => void): void {
+        this.connection?.on("OpponentReady", (data: { battleId: number; message: string; opponentName: string }) => {
+            console.log("Opponent ready:", data);
+            callback(data);
+        });
+    }
+
     offMatchmakingStatus(): void {
         this.connection?.off("MatchmakingStatus");
     }
@@ -137,6 +144,10 @@ class SignalRService {
 
     offTurnProcessed(): void {
         this.connection?.off("TurnProcessed");
+    }
+
+    offOpponentReady(): void {
+        this.connection?.off("OpponentReady");
     }
 
     offMatchmakingError(): void {
