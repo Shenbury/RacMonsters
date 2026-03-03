@@ -1,6 +1,46 @@
 import * as React from 'react'
 const { useEffect, useRef, useState } = React
 import './App.css'
+import { GameModeSelection } from './components/GameModeSelection'
+import { MultiplayerLobby } from './components/MultiplayerLobby'
+import { CharacterSelection } from './components/CharacterSelection'
+import { MultiplayerBattle } from './components/MultiplayerBattle'
+import type { Character as BaseCharacter } from './types'
+
+// Extended types to handle both camelCase and PascalCase from API
+// Using Record<string, any> to allow additional properties from the backend
+interface Ability extends Record<string, any> {
+    id?: number
+    name?: string
+    Name?: string
+    power?: number
+    Power?: number
+    description?: string
+    Description?: string
+    isTech?: boolean
+    IsTech?: boolean
+    isHeal?: boolean
+    IsHeal?: boolean
+    speed?: number
+    Speed?: number
+    accuracy?: number
+    Accuracy?: number
+}
+
+interface Character extends Record<string, any> {
+    id: number
+    name?: string
+    Name?: string
+    imageUrl?: string
+    ImageUrl?: string
+    currentHealth?: number
+    maxHealth?: number
+    attack?: number
+    defense?: number
+    techAttack?: number
+    techDefense?: number
+    abilities?: Ability[]
+}
 
 // Music files located in public/music. Update this list if you add/remove songs.
 const SONG_FILENAMES = [
@@ -26,46 +66,12 @@ const DEFEAT_SOUND_FILENAMES = [
     'EmoDamage.mp3'
 ]
 
-type GameState = 'start' | 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard' | 'transition'
-
-/**
- * Minimal shapes inferred from usage in the component.
- */
-interface Ability {
-    name?: string
-    Name?: string
-    power?: number
-    Power?: number
-    description?: string
-    Description?: string
-    isTech?: boolean
-    IsTech?: boolean
-    isHeal?: boolean
-    IsHeal?: boolean
-    accuracy?: number
-    Accuracy?: number
-}
-
-interface Character {
-    id: string | number
-    name?: string
-    imageUrl?: string
-    currentHealth?: number
-    maxHealth?: number
-    attack?: number
-    defense?: number
-    techAttack?: number
-    techDefense?: number
-    abilities?: Ability[]
-    // allow other unknown fields the backend may include
-    [key: string]: any
-}
+type GameState = 'start' | 'modeselect' | 'select' | 'multiplayerlobby' | 'multiplayerbattle' | 'battle' | 'victory' | 'defeat' | 'leaderboard' | 'transition'
 
 const App: React.FC = () => {
     const [allChars, setAllChars] = useState<Character[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [filter, setFilter] = useState<string>('')
     const [playerName, setPlayerName] = useState<string>('')
     const [nameSaved, setNameSaved] = useState<boolean>(false)
     const [playerHP, setPlayerHP] = useState<number | null>(null)
@@ -84,10 +90,17 @@ const App: React.FC = () => {
     const [enemy, setEnemy] = useState<Character | null>(null)
     const [opponents, setOpponents] = useState<Character[]>([])
     const [gameState, setGameState] = useState<GameState>('start')
-    const [hoveredChar, setHoveredChar] = useState<Character | null>(null)
+    const [gameMode, setGameMode] = useState<'singleplayer' | 'multiplayer' | null>(null)
     const [initialOpponentsCount, setInitialOpponentsCount] = useState<number>(0)
     const [defeatedEnemy, setDefeatedEnemy] = useState<Character | null>(null)
     const [nextEnemy, setNextEnemy] = useState<Character | null>(null)
+
+    // Multiplayer battle state
+    const [multiplayerBattleId, setMultiplayerBattleId] = useState<number | null>(null)
+    const [multiplayerOpponentName, setMultiplayerOpponentName] = useState<string>('')
+    const [multiplayerOpponentCharId, setMultiplayerOpponentCharId] = useState<number | null>(null)
+    const [multiplayerIsMyTurn, setMultiplayerIsMyTurn] = useState<boolean>(false)
+    const [multiplayerSelectedCharacter, setMultiplayerSelectedCharacter] = useState<Character | null>(null)
 
     // leaderboard entries fetched from backend
     interface LeaderboardEntry { id?: number; name: string; character?: string; score: number; timestamp?: string }
@@ -150,8 +163,8 @@ const App: React.FC = () => {
         if (storedName) {
             setPlayerName(storedName)
             setNameSaved(true)
-            // Skip start screen if name already saved
-            setGameState('select')
+            // Skip start screen and go to mode select
+            setGameState('modeselect')
         }
         const storedVol = localStorage.getItem('rac-volume')
         if (storedVol != null) {
@@ -684,7 +697,7 @@ const App: React.FC = () => {
                                         if (e.key === 'Enter' && playerName.trim()) {
                                             localStorage.setItem('rac-player-name', playerName)
                                             setNameSaved(true)
-                                            setGameState('select')
+                                            setGameState('modeselect')
                                             pushLog(`Welcome, ${playerName}!`)
                                         }
                                     }}
@@ -697,7 +710,7 @@ const App: React.FC = () => {
                                         if (playerName.trim()) {
                                             localStorage.setItem('rac-player-name', playerName)
                                             setNameSaved(true)
-                                            setGameState('select')
+                                            setGameState('modeselect')
                                             pushLog(`Welcome, ${playerName}!`)
                                         }
                                     }}
@@ -717,72 +730,60 @@ const App: React.FC = () => {
                     </div>
                 )}
 
+                {gameState === 'modeselect' && (
+                    <GameModeSelection
+                        playerName={playerName}
+                        onSelectMode={(mode) => {
+                            setGameMode(mode);
+                            setGameState('select');
+                            if (mode === 'singleplayer') {
+                                pushLog('Starting single player mode...');
+                            } else {
+                                pushLog('Select your character for multiplayer...');
+                            }
+                        }}
+                    />
+                )}
+
+                {gameState === 'multiplayerlobby' && multiplayerSelectedCharacter && (
+                    <MultiplayerLobby
+                        playerName={playerName}
+                        selectedCharacter={multiplayerSelectedCharacter as BaseCharacter}
+                        onMatchFound={(battleId, opponentName, opponentCharacterId, isMyTurn) => {
+                            setMultiplayerBattleId(battleId);
+                            setMultiplayerOpponentName(opponentName);
+                            setMultiplayerOpponentCharId(opponentCharacterId);
+                            setMultiplayerIsMyTurn(isMyTurn);
+                            setGameState('multiplayerbattle');
+                            pushLog(`Match found! You're battling ${opponentName}!`);
+                        }}
+                        onBack={() => {
+                            setMultiplayerSelectedCharacter(null);
+                            setGameState('select');
+                        }}
+                    />
+                )}
+
                 {gameState === 'select' && (
                     <div className="card select-card">
-                        <h2 className="section-title">Choose your champion</h2>
-                        <div className="section-header">
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <input aria-label="Filter characters" placeholder="Search..." value={filter} onChange={e => setFilter(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }} />
-                                <button className="refresh-button" onClick={load} disabled={loading} aria-label="Reload characters">Reload</button>
-                            </div>
-                        </div>
-
-                        {loading ? (
-                            <div className="loading-skeleton-grid">
-                                <div className="skeleton-tile" />
-                                <div className="skeleton-tile" />
-                                <div className="skeleton-tile" />
-                                <div className="skeleton-tile" />
-                            </div>
-                        ) : error ? (
-                            <div>
-                                <div className="error-banner">Failed to load: {error}</div>
-                            </div>
-                        ) : (
-                            <div className="char-grid">
-                                {allChars
-                                    .filter(c => !filter || (c.name ?? '').toString().toLowerCase().includes(filter.toLowerCase()))
-                                    .map((c) => (
-                                        <div key={c.id} className="char-tile-wrapper">
-                                            <button
-                                                className="char-tile"
-                                                onClick={() => startWithPlayer(c)}
-                                                onMouseEnter={() => setHoveredChar(c)}
-                                                onMouseLeave={() => setHoveredChar(null)}
-                                                onFocus={() => setHoveredChar(c)}
-                                                onBlur={() => setHoveredChar(null)}
-                                            >
-                                                <div className="char-sprite">
-                                                    {c.imageUrl ? (
-                                                        <img src={c.imageUrl} alt={c.name} />
-                                                    ) : (
-                                                        <svg width="64" height="64" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#fff" /><circle cx="50" cy="40" r="22" fill="#ff9f1c" /></svg>
-                                                    )}
-                                                </div>
-                                                <div className="char-name">{c.name}</div>
-                                                <div className="char-stats">HP: {c.maxHealth ?? '--'} | ATK: {c.attack ?? '--'} | DEF: {c.defense ?? '--'}</div>
-                                                <div className="char-stats">TATK: {c.techAttack ?? '--'} | TDEF: {c.techDefense ?? '--'}</div>
-                                            </button>
-
-                                            {hoveredChar?.id === c.id && c.abilities && c.abilities.length > 0 && (
-                                                <div className="hover-abilities" aria-hidden="true">
-                                                    <div className="hover-abilities-title">Abilities</div>
-                                                    <ul>
-                                                        {c.abilities.map((ab: Ability, idx: number) => {
-                                                            const name = ab.name ?? ab.Name ?? 'Ability'
-                                                            return (
-                                                                <li key={idx} className="hover-ability-item">
-                                                                    <span className="hover-ability-name">{name}</span>
-                                                                </li>
-                                                            )
-                                                        })}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                            </div>
-                        )}
+                        <CharacterSelection
+                            characters={allChars}
+                            loading={loading}
+                            error={error}
+                            onSelectCharacter={(char) => {
+                                if (gameMode === 'singleplayer') {
+                                    startWithPlayer(char);
+                                } else if (gameMode === 'multiplayer') {
+                                    setMultiplayerSelectedCharacter(char);
+                                    setGameState('multiplayerlobby');
+                                    pushLog('Entering multiplayer matchmaking...');
+                                }
+                            }}
+                            onBack={() => setGameState('modeselect')}
+                            onRefresh={load}
+                            title={gameMode === 'multiplayer' ? 'Choose your champion for multiplayer' : 'Choose your champion'}
+                            subtitle={gameMode === 'multiplayer' ? 'Select a character to enter matchmaking' : undefined}
+                        />
                     </div>
                 )}
 
@@ -901,6 +902,35 @@ const App: React.FC = () => {
                             </ul>
                         </div>
                     </div>
+                )}
+
+                {gameState === 'multiplayerbattle' && multiplayerBattleId && multiplayerSelectedCharacter && multiplayerOpponentCharId && (
+                    <MultiplayerBattle
+                        battleId={multiplayerBattleId}
+                        opponentName={multiplayerOpponentName}
+                        opponentCharacterId={multiplayerOpponentCharId}
+                        initialIsMyTurn={multiplayerIsMyTurn}
+                        playerCharacter={multiplayerSelectedCharacter as BaseCharacter}
+                        onBattleEnd={(won: boolean) => {
+                            if (won) {
+                                pushLog(`Victory! You defeated ${multiplayerOpponentName}!`);
+                            } else {
+                                pushLog(`Defeat! ${multiplayerOpponentName} was victorious.`);
+                            }
+                            setMultiplayerBattleId(null);
+                            setMultiplayerOpponentName('');
+                            setMultiplayerOpponentCharId(null);
+                            setMultiplayerSelectedCharacter(null);
+                            setGameState('modeselect');
+                        }}
+                        onBackToLobby={() => {
+                            setMultiplayerBattleId(null);
+                            setMultiplayerOpponentName('');
+                            setMultiplayerOpponentCharId(null);
+                            setMultiplayerSelectedCharacter(null);
+                            setGameState('select');
+                        }}
+                    />
                 )}
 
                 {gameState === 'victory' && (

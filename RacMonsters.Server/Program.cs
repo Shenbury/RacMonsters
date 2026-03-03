@@ -15,6 +15,9 @@ using RacMonsters.Server.Services.Leaderboard;
 using RacMonsters.Server.Services.Rounds;
 using RacMonsters.Server.Endpoints;
 using RacMonsters.Server.Services.AIs;
+using RacMonsters.Server.Services.Matchmaking;
+using RacMonsters.Server.Services.Timeouts;
+using RacMonsters.Server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +31,9 @@ builder.Services.AddProblemDetails();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Add SignalR for multiplayer support (Phase 1)
+builder.Services.AddSignalR();
 
 // Register character loader service
 // repositories
@@ -53,6 +59,12 @@ builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IRoundService, RoundService>();
 builder.Services.AddScoped<IAIService, AIService>();
+
+// Multiplayer services (Phase 3 - full implementation)
+builder.Services.AddSingleton<IMatchmakingService, MatchmakingService>();
+
+// Background services (Phase 6 - Turn Timeout System)
+builder.Services.AddHostedService<TurnTimeoutService>();
 
 var app = builder.Build();
 
@@ -119,6 +131,9 @@ api.MapRoundEndpoints();
 api.MapLeaderboardEndpoints();
 
 app.MapDefaultEndpoints();
+
+// Map SignalR hub for multiplayer (Phase 1)
+app.MapHub<GameHub>("/gameHub");
 
 app.UseFileServer();
 

@@ -1,0 +1,242 @@
+.game-mode-selection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.mode-container {
+    max-width: 1200px;
+    width: 100%;
+    text-align: center;
+}
+
+.mode-title {
+    font-size: 3rem;
+    color: #fff;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    animation: fadeInDown 0.6s ease-out;
+}
+
+.mode-subtitle {
+    font-size: 1.5rem;
+    color: #aaa;
+    margin-bottom: 60px;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.mode-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 40px;
+    margin: 0 auto 40px;
+    max-width: 800px;
+}
+
+.mode-card {
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border: 3px solid #444;
+    border-radius: 20px;
+    padding: 40px 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.8s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(76, 175, 80, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.mode-card:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+}
+
+.mode-card:hover::before {
+    opacity: 1;
+}
+
+.singleplayer-card {
+    border-color: #4CAF50;
+}
+
+.singleplayer-card:hover {
+    border-color: #66BB6A;
+    box-shadow: 0 15px 40px rgba(76, 175, 80, 0.4);
+}
+
+.multiplayer-card {
+    border-color: #2196F3;
+}
+
+.multiplayer-card:hover {
+    border-color: #42A5F5;
+    box-shadow: 0 15px 40px rgba(33, 150, 243, 0.4);
+}
+
+.multiplayer-card::before {
+    background: linear-gradient(135deg, transparent 0%, rgba(33, 150, 243, 0.1) 100%);
+}
+
+.mode-icon {
+    margin: 0 auto 20px;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.mode-card:hover .mode-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.mode-card h2 {
+    font-size: 2rem;
+    color: #fff;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.mode-description {
+    font-size: 1.1rem;
+    color: #bbb;
+    line-height: 1.8;
+    margin: 20px 0;
+    min-height: 80px;
+}
+
+.mode-button {
+    margin-top: 20px;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.singleplayer-card .mode-button {
+    background: linear-gradient(145deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.singleplayer-card .mode-button:hover {
+    background: linear-gradient(145deg, #66BB6A, #4CAF50);
+    transform: scale(1.05);
+}
+
+.multiplayer-card .mode-button {
+    background: linear-gradient(145deg, #2196F3, #1976D2);
+    color: white;
+}
+
+.multiplayer-card .mode-button:hover {
+    background: linear-gradient(145deg, #42A5F5, #2196F3);
+    transform: scale(1.05);
+}
+
+.mode-hint {
+    margin-top: 40px;
+    padding: 20px;
+    background: rgba(255, 193, 7, 0.1);
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    border-radius: 12px;
+    animation: fadeIn 1s ease-out;
+}
+
+.mode-hint p {
+    color: #FFC107;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .mode-title {
+        font-size: 2rem;
+    }
+
+    .mode-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 40px;
+    }
+
+    .mode-cards {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .mode-card {
+        padding: 30px 20px;
+    }
+
+    .mode-card h2 {
+        font-size: 1.6rem;
+    }
+
+    .mode-description {
+        font-size: 1rem;
+        min-height: auto;
+    }
+
+    .mode-button {
+        padding: 12px 30px;
+        font-size: 1rem;
+    }
+
+    .mode-hint p {
+        font-size: 1rem;
+    }
+}

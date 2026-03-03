@@ -10,6 +10,12 @@ export default defineConfig({
       '/api': {
         target: process.env.SERVER_HTTPS || process.env.SERVER_HTTP,
         changeOrigin: true
+      },
+      // Proxy SignalR hub for multiplayer
+      '/gameHub': {
+        target: process.env.SERVER_HTTPS || process.env.SERVER_HTTP,
+        changeOrigin: true,
+        ws: true
       }
     }
   }

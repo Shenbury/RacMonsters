@@ -80,7 +80,7 @@ namespace RacMonsters.Server.Data
                     new AbilityEntity { Id = 60, Name = "Chef Up a Storm", Description = "Created a swirling storm of meats and food", IsTech = true, IsHeal = false, Power = 10, Speed = 4, Accuracy = 0.75 },
                     new AbilityEntity { Id = 61, Name = "Chainsaw Slice", Description = "Cut them in half with the chainsaw", IsTech = false, IsHeal = false, Power = 14, Speed = 3, Accuracy = 0.55 },
                     new AbilityEntity { Id = 62, Name = "Minion Munch", Description = "Set minions on your enemy devouring your flesh", IsTech = true, IsHeal = false, Power = 12, Speed = 6, Accuracy = 0.75 },
-                    new AbilityEntity { Id = 63, Name = "Blood Chugg", Description = "Drinks the blood of the enemies", IsTech = true, IsHeal = true, Power = 11, Speed = 4, Accuracy = 0.9 },
+                    new AbilityEntity { Id = 63, Name = "Blood Chugg", Description = "Drinks the blood of the enemies", IsTech = true, IsHeal = true, Power = 7, Speed = 4, Accuracy = 0.5 },
                     new AbilityEntity { Id = 64, Name = "Charged Up!", Description = "Charges at the enemy with full force emitting electricity", IsTech = true, IsHeal = false, Power = 13, Speed = 5, Accuracy = 0.65 },
                     new AbilityEntity { Id = 65, Name = "Feuer frei!", Description = "Sets the enemy on fire with a powerful flamethrower", IsTech = false, IsHeal = false, Power = 14, Speed = 4, Accuracy = 0.55 },
                     new AbilityEntity { Id = 66, Name = "Epic Bass Solo", Description = "Plays an epic bass solo that rejuvenates himself", IsTech = false, IsHeal = true, Power = 9, Speed = 8, Accuracy = 0.95 },

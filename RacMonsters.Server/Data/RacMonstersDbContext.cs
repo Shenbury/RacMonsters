@@ -30,6 +30,14 @@ namespace RacMonsters.Server.Data
         public CharacterEntity? WinningCharacterEntity { get; set; }
 
         public ICollection<RoundEntity> Rounds { get; set; } = new List<RoundEntity>();
+
+        // NEW FIELDS FOR MULTIPLAYER (Phase 2)
+        public bool IsMultiplayer { get; set; }
+        public string? Player1ConnectionId { get; set; }
+        public string? Player2ConnectionId { get; set; }
+        public string? CurrentTurnConnectionId { get; set; }
+        public DateTime? TurnStartTime { get; set; }
+        public int TurnTimeoutSeconds { get; set; } = 30;
     }
 
     public class RoundEntity

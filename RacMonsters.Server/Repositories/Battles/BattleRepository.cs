@@ -19,5 +19,29 @@ namespace RacMonsters.Server.Repositories.Battles
             var b = _battles.FirstOrDefault(x => x.Id == battleId);
             return await Task.FromResult(b!);
         }
+
+        public async Task<Battle> UpdateBattle(Battle battle)
+        {
+            var existing = _battles.FirstOrDefault(x => x.Id == battle.Id);
+            if (existing != null)
+            {
+                var index = _battles.IndexOf(existing);
+                _battles[index] = battle;
+            }
+            return await Task.FromResult(battle);
+        }
+
+        public async Task<List<Battle>> GetBattlesWithExpiredTurns()
+        {
+            var now = DateTime.UtcNow;
+            var expiredBattles = _battles.Where(b => 
+                b.IsMultiplayer && 
+                b.WinningCharacter == null && 
+                b.TurnStartTime.HasValue &&
+                (now - b.TurnStartTime.Value).TotalSeconds > b.TurnTimeoutSeconds
+            ).ToList();
+
+            return await Task.FromResult(expiredBattles);
+        }
     }
 }
