@@ -123,17 +123,6 @@ const App: React.FC = () => {
         }
     }
 
-    const addLeaderboardEntry = async (name: string, score: number, character?: string) => {
-        if (!name) return
-        try {
-            await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, score, character }) })
-            // refresh local copy
-            fetchLeaderboard()
-        } catch {
-            // ignore
-        }
-    }
-
     const upsertLeaderboard = async (name: string, delta = 1, character?: string) => {
         if (!name) return
         try {
@@ -581,8 +570,6 @@ const App: React.FC = () => {
                 setGameState('defeat')
                 pushLog(`${player.name} has fallen...`)
                 playDefeatSound()
-                // record defeat to leaderboard (score 0) and include champion used
-                addLeaderboardEntry(playerName, 0, player?.name)
             }
         }
 
