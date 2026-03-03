@@ -13,8 +13,7 @@ const SONG_FILENAMES = [
 
 // Sound effects located in public/sounds. Update this list if you add/remove sounds.
 const MISS_SOUND_FILENAMES = [
-    'fart.mp3',
-    'DogDoing.mp3'
+    'fart.mp3'
 ]
 
 const HEAL_SOUND_FILENAMES = [
@@ -28,7 +27,7 @@ const DEFEAT_SOUND_FILENAMES = [
     'EmoDamage.mp3'
 ]
 
-type GameState = 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard'
+type GameState = 'start' | 'select' | 'battle' | 'victory' | 'defeat' | 'leaderboard'
 
 /**
  * Minimal shapes inferred from usage in the component.
@@ -74,7 +73,7 @@ const App: React.FC = () => {
     const [enemyHP, setEnemyHP] = useState<number | null>(null)
     const [busy, setBusy] = useState(false)
     const [log, setLog] = useState<string[]>(['Welcome to the arena'])
-    const [darkMode, setDarkMode] = useState(false)
+    const [darkMode, setDarkMode] = useState(true)
     const [playerAnim, setPlayerAnim] = useState<string | null>(null)
     const [enemyAnim, setEnemyAnim] = useState<string | null>(null)
     const [playerMiss, setPlayerMiss] = useState(false)
@@ -85,9 +84,11 @@ const App: React.FC = () => {
     const [player, setPlayer] = useState<Character | null>(null)
     const [enemy, setEnemy] = useState<Character | null>(null)
     const [opponents, setOpponents] = useState<Character[]>([])
-    const [gameState, setGameState] = useState<GameState>('select')
+    const [gameState, setGameState] = useState<GameState>('start')
     const [hoveredChar, setHoveredChar] = useState<Character | null>(null)
     const [initialOpponentsCount, setInitialOpponentsCount] = useState<number>(0)
+    const [defeatedEnemy, setDefeatedEnemy] = useState<Character | null>(null)
+    const [nextEnemy, setNextEnemy] = useState<Character | null>(null)
 
     // leaderboard entries fetched from backend
     interface LeaderboardEntry { id?: number; name: string; character?: string; score: number; timestamp?: string }
@@ -148,8 +149,12 @@ const App: React.FC = () => {
         const stored = localStorage.getItem('rac-dark')
         if (stored != null) setDarkMode(stored === 'true')
         const storedName = localStorage.getItem('rac-player-name')
-        if (storedName) setPlayerName(storedName)
-        if (storedName) setNameSaved(true)
+        if (storedName) {
+            setPlayerName(storedName)
+            setNameSaved(true)
+            // Skip start screen if name already saved
+            setGameState('select')
+        }
         const storedVol = localStorage.getItem('rac-volume')
         if (storedVol != null) {
             const v = parseFloat(storedVol)
@@ -350,7 +355,6 @@ const App: React.FC = () => {
             const chars = await res.json()
             if (Array.isArray(chars) && chars.length > 0) {
                 setAllChars(chars)
-                opponents && opponents.length === 0 && setOpponents(chars) // set opponents if not already set
             }
         } catch (ex: any) {
             const msg = ex?.message ?? 'Failed to load characters'
@@ -547,11 +551,9 @@ const App: React.FC = () => {
             if (eHit === false) {
                 setEnemyMiss(true)
                 setTimeout(() => setEnemyMiss(false), 1000)
-                playMissSound()
             } else if (eHeal) {
                 setEnemyAnim('glow-green')
                 clearEnemyAnim(1000)
-                playHealSound()
             } else if (eDamage) {
                 setEnemyAnim('shake')
                 setPlayerAnim(prev => (prev ? prev + ' glow-red shudder' : 'glow-red shudder'))
@@ -599,8 +601,10 @@ const App: React.FC = () => {
         setOpponents([])
         setPlayerHP(null)
         setEnemyHP(null)
-        setGameState('select')
-        setLog(['Choose your champion'])
+        setGameState('start')
+        setLog(['Welcome to the arena'])
+        setPlayerName('')
+        setNameSaved(false)
     }
 
     const playerMax = player?.maxHealth ?? 100
@@ -616,16 +620,8 @@ const App: React.FC = () => {
             <header className="app-header">
                 <h1 className="app-title">RAC Battle</h1>
                 <div className="header-controls">
-                    {!nameSaved ? (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <input placeholder="Your name" aria-label="Player name" value={playerName} onChange={e => setPlayerName(e.target.value)} style={{ padding: 6, borderRadius: 6 }} />
-                            <button className="btn" onClick={() => { localStorage.setItem('rac-player-name', playerName); setNameSaved(true); pushLog('Name saved') }}>Save</button>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <div className="saved-name">{playerName}</div>
-                            <button className="btn" onClick={() => { setNameSaved(false) }} aria-label="Edit name">Edit</button>
-                        </div>
+                    {gameState !== 'start' && playerName && (
+                        <div className="saved-name">{playerName}</div>
                     )}
                     <label className="dark-toggle">
                         <input
@@ -636,7 +632,9 @@ const App: React.FC = () => {
                         />
                         <span>Dark</span>
                     </label>
-                    <button className="btn" onClick={() => setGameState('leaderboard')}>Leaderboard</button>
+                    {gameState !== 'start' && (
+                        <button className="btn" onClick={() => setGameState('leaderboard')}>Leaderboard</button>
+                    )}
                 </div>
             </header>
 
@@ -665,6 +663,64 @@ const App: React.FC = () => {
             </div>
 
             <main className="main-content">
+                {gameState === 'start' && (
+                    <div className="card start-card">
+                        <h2 className="section-title">Welcome to RAC Battle!</h2>
+                        <div className="start-content">
+                            <div className="start-logo">
+                                <svg width="160" height="160" viewBox="0 0 100 100" aria-hidden="true">
+                                    <circle cx="50" cy="50" r="44" fill="#ff9f1c" />
+                                    <circle cx="50" cy="40" r="22" fill="#fff" />
+                                    <circle cx="42" cy="38" r="4" fill="#111" />
+                                    <circle cx="58" cy="38" r="4" fill="#111" />
+                                    <path d="M 40 48 Q 50 54 60 48" stroke="#111" strokeWidth="3" fill="none" strokeLinecap="round" />
+                                </svg>
+                            </div>
+                            <p className="start-subtitle">Enter your leaderboard name to begin your journey</p>
+                            <div className="start-form">
+                                <input
+                                    type="text"
+                                    placeholder="Enter your name"
+                                    aria-label="Player name"
+                                    value={playerName}
+                                    onChange={e => setPlayerName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && playerName.trim()) {
+                                            localStorage.setItem('rac-player-name', playerName)
+                                            setNameSaved(true)
+                                            setGameState('select')
+                                            pushLog(`Welcome, ${playerName}!`)
+                                        }
+                                    }}
+                                    className="start-input"
+                                    autoFocus
+                                />
+                                <button
+                                    className="btn start-button"
+                                    onClick={() => {
+                                        if (playerName.trim()) {
+                                            localStorage.setItem('rac-player-name', playerName)
+                                            setNameSaved(true)
+                                            setGameState('select')
+                                            pushLog(`Welcome, ${playerName}!`)
+                                        }
+                                    }}
+                                    disabled={!playerName.trim()}
+                                >
+                                    Start Game
+                                </button>
+                            </div>
+                            <button
+                                className="btn secondary-btn"
+                                onClick={() => setGameState('leaderboard')}
+                                style={{ marginTop: '1rem' }}
+                            >
+                                View Leaderboard
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {gameState === 'select' && (
                     <div className="card select-card">
                         <h2 className="section-title">Choose your champion</h2>
@@ -897,6 +953,18 @@ const App: React.FC = () => {
                         <p>Your champion has fallen. Try again.</p>
                         <div className="controls-right">
                             <button className="btn reset" onClick={resetAll}>Try Again</button>
+                        </div>
+                    </div>
+                )}
+
+                {gameState === 'transition' && (
+                    <div className="card transition-card">
+                        <h2 className="section-title">{defeatedEnemy?.name} Defeated!</h2>
+                        <div style={{ textAlign: 'center', fontSize: '1.2rem', marginTop: '20px' }}>
+                            <p>{nextEnemy?.name} is approaching...</p>
+                            <div style={{ marginTop: '20px', fontSize: '0.9rem', opacity: 0.7 }}>
+                                Prepare yourself!
+                            </div>
                         </div>
                     </div>
                 )}
