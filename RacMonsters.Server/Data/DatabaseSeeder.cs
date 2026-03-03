@@ -40,7 +40,7 @@ namespace RacMonsters.Server.Data
                     new AbilityEntity { Id = 20, Name = "Force feed dog turd", Description = "Force feed dog turd from this shoe into the opponents mouth", IsTech = false, IsHeal = false, Power = 14, Speed = 2, Accuracy = 0.6 },
                     new AbilityEntity { Id = 21, Name = "Notes for Monday", Description = "Leaves a large stack of notes for the opponent to sort out on monday", IsTech = true, IsHeal = false, Power = 9, Speed = 7, Accuracy = 0.75 },
                     new AbilityEntity { Id = 22, Name = "Scratch one Grub", Description = "Pulls out a chainsaw swings it at his opponent", IsTech = false, IsHeal = false, Power = 20, Speed = 3, Accuracy = 0.3 },
-                    new AbilityEntity { Id = 23, Name = "Inner Turmoil", Description = "Looks stressed and overwhelmed dealing psychic damage", IsTech = false, IsHeal = false, Power = 9, Speed = 5, Accuracy = 0.75 },
+                    new AbilityEntity { Id = 23, Name = "Rugby Tackle", Description = "Takedown the enemy with a rugby tackle", IsTech = false, IsHeal = false, Power = 9, Speed = 5, Accuracy = 0.75 },
                     new AbilityEntity { Id = 24, Name = "Coffee", Description = "Drinks a cup of coffee to regain focus and energy", IsTech = false, IsHeal = true, Power = 11, Speed = 4, Accuracy = 0.8 },
                     new AbilityEntity { Id = 25, Name = "Beliggerent Banjo", Description = "Plays a newly discovered band's beliggerent banjo to inflict ear pain on the opponent", IsTech = false, IsHeal = false, Power = 9, Speed = 7, Accuracy = 0.75 },
                     new AbilityEntity { Id = 26, Name = "Spilled Tea", Description = "Spills hot tea on the opponent causing burns", IsTech = false, IsHeal = false, Power = 10, Speed = 3, Accuracy = 0.7 },
@@ -77,7 +77,15 @@ namespace RacMonsters.Server.Data
                     new AbilityEntity { Id = 57, Name = "Laptop Explosion Virus", Description = "Gives a compure virus destroying your tech equipment", IsTech = true, IsHeal = false, Power = 10, Speed = 6, Accuracy = 0.8 },
                     new AbilityEntity { Id = 58, Name = "Vibe Station", Description = "Vibes to the latest Swifty James", IsTech = true, IsHeal = true, Power = 9, Speed = 10, Accuracy = 0.85 },
                     new AbilityEntity { Id = 59, Name = "Swift Facial Redesign", Description = "Redesigns someones face with his fists", IsTech = false, IsHeal = false, Power = 12, Speed = 6, Accuracy = 0.75 },
-                    new AbilityEntity { Id = 60, Name = "Chef Up a Storm", Description = "Created a swirling storm of meats and food", IsTech = true, IsHeal = false, Power = 10, Speed = 4, Accuracy = 0.75 }
+                    new AbilityEntity { Id = 60, Name = "Chef Up a Storm", Description = "Created a swirling storm of meats and food", IsTech = true, IsHeal = false, Power = 10, Speed = 4, Accuracy = 0.75 },
+                    new AbilityEntity { Id = 61, Name = "Chainsaw Slice", Description = "Cut them in half with the chainsaw", IsTech = false, IsHeal = false, Power = 20, Speed = 3, Accuracy = 0.3 },
+                    new AbilityEntity { Id = 62, Name = "Minion Munch", Description = "Set minions on your enemy devouring your flesh", IsTech = true, IsHeal = false, Power = 12, Speed = 6, Accuracy = 0.8 },
+                    new AbilityEntity { Id = 63, Name = "Blood Chugg", Description = "Drinks the blood of the enemies", IsTech = true, IsHeal = true, Power = 11, Speed = 4, Accuracy = 0.8 },
+                    new AbilityEntity { Id = 64, Name = "Charged Up!", Description = "Charges at the enemy with full force emitting electricity", IsTech = true, IsHeal = false, Power = 13, Speed = 5, Accuracy = 0.75 },
+                    new AbilityEntity { Id = 65, Name = "Feuer frei!", Description = "Sets the enemy on fire with a powerful flamethrower", IsTech = false, IsHeal = false, Power = 14, Speed = 4, Accuracy = 0.7 },
+                    new AbilityEntity { Id = 66, Name = "Epic Bass Solo", Description = "Delivers a devastating guitar riff that damages the opponent", IsTech = false, IsHeal = false, Power = 9, Speed = 8, Accuracy = 0.85 },
+                    new AbilityEntity { Id = 67, Name = "Bass Smash", Description = "Smashes the enemy with a powerful bass attack", IsTech = false, IsHeal = false, Power = 13, Speed = 5, Accuracy = 0.75 },
+                    new AbilityEntity { Id = 68, Name = "Kummerspeck!", Description = "Hurl abuse at your enemy making them fat from emotional trauma", IsTech = false, IsHeal = false, Power = 10, Speed = 7, Accuracy = 0.85 },
                 };
 
                 // Abilities table uses identity on Id; enable IDENTITY_INSERT to allow explicit Ids in seed
@@ -114,7 +122,9 @@ namespace RacMonsters.Server.Data
                     new CharacterEntity { Id = 12, Name = "Charl", ImageUrl = "public/Charl.png", MaxHealth = 38, CurrentHealth = 38, Attack = 7, Defense = 8, TechAttack = 6, TechDefense = 12 },
                     new CharacterEntity { Id = 13, Name = "Barnes", ImageUrl = "public/Barnes.png", MaxHealth = 42, CurrentHealth = 42, Attack = 8, Defense = 8, TechAttack = 6, TechDefense = 6 },
                     new CharacterEntity { Id = 14, Name = "Belassie", ImageUrl = "public/Belassie.png", MaxHealth = 35, CurrentHealth = 35, Attack = 12, Defense = 9, TechAttack = 5, TechDefense = 5 },
-                    new CharacterEntity { Id = 15, Name = "Sailesh", ImageUrl = "public/Sailesh.png", MaxHealth = 48, CurrentHealth = 48, Attack = 8, Defense = 5, TechAttack = 10, TechDefense = 8 }
+                    new CharacterEntity { Id = 15, Name = "Sailesh", ImageUrl = "public/Sailesh.png", MaxHealth = 48, CurrentHealth = 48, Attack = 8, Defense = 5, TechAttack = 10, TechDefense = 8 },
+                    new CharacterEntity { Id = 16, Name = "Andy", ImageUrl = "public/Andy.png", MaxHealth = 46, CurrentHealth = 46, Attack = 4, Defense = 10, TechAttack = 11, TechDefense = 7 },
+                    new CharacterEntity { Id = 17, Name = "Aaron", ImageUrl = "public/Aaron.png", MaxHealth = 40, CurrentHealth = 40, Attack = 12, Defense = 4, TechAttack = 7, TechDefense = 5 }
                 };
 
                 // Characters table uses identity on Id; enable IDENTITY_INSERT to allow explicit Ids in seed
@@ -192,7 +202,15 @@ namespace RacMonsters.Server.Data
                     new CharacterAbilityEntity { CharacterId = 15, AbilityId = 57 },
                     new CharacterAbilityEntity { CharacterId = 15, AbilityId = 58 },
                     new CharacterAbilityEntity { CharacterId = 15, AbilityId = 59 },
-                    new CharacterAbilityEntity { CharacterId = 15, AbilityId = 60 }
+                    new CharacterAbilityEntity { CharacterId = 15, AbilityId = 60 },
+                    new CharacterAbilityEntity { CharacterId = 16, AbilityId = 61 },
+                    new CharacterAbilityEntity { CharacterId = 16, AbilityId = 62 },
+                    new CharacterAbilityEntity { CharacterId = 16, AbilityId = 63 },
+                    new CharacterAbilityEntity { CharacterId = 16, AbilityId = 64 },
+                    new CharacterAbilityEntity { CharacterId = 17, AbilityId = 65 },
+                    new CharacterAbilityEntity { CharacterId = 17, AbilityId = 66 },
+                    new CharacterAbilityEntity { CharacterId = 17, AbilityId = 67 },
+                    new CharacterAbilityEntity { CharacterId = 17, AbilityId = 68 },
                 };
 
                 _db.CharacterAbilities.AddRange(mappings);
