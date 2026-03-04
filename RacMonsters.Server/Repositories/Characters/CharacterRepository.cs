@@ -14,11 +14,39 @@ namespace RacMonsters.Server.Repositories.Characters
             _db = db;
         }
 
+        private Ability[] MapAbilities(IEnumerable<CharacterAbilityEntity> characterAbilities)
+        {
+            var abilities = characterAbilities.Select(ca => new Ability
+            {
+                Id = ca.Ability!.Id,
+                Name = ca.Ability.Name,
+                Description = ca.Ability.Description,
+                IsTech = ca.Ability.IsTech,
+                IsHeal = ca.Ability.IsHeal,
+                Power = ca.Ability.Power,
+                Speed = ca.Ability.Speed,
+                Accuracy = ca.Ability.Accuracy,
+                StatusEffects = ca.Ability.StatusEffects?.Select(se => new StatusEffectApplication
+                {
+                    Type = (StatusEffectType)se.StatusEffectType,
+                    Duration = se.Duration,
+                    Power = se.Power,
+                    Modifier = se.Modifier,
+                    ApplyChance = se.ApplyChance,
+                    ApplyToSelf = se.ApplyToSelf,
+                    RequiresCharging = se.RequiresCharging
+                }).ToList() ?? new List<StatusEffectApplication>()
+            }).ToArray();
+
+            return abilities;
+        }
+
         public async Task<Character> GetCharacter(int id)
         {
             var ent = await _db.Characters
                 .Include(c => c.CharacterAbilities)
                     .ThenInclude(ca => ca.Ability)
+                        .ThenInclude(a => a!.StatusEffects)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (ent == null) return null!;
@@ -34,17 +62,7 @@ namespace RacMonsters.Server.Repositories.Characters
                 Defense = ent.Defense,
                 TechAttack = ent.TechAttack,
                 TechDefense = ent.TechDefense,
-                Abilities = ent.CharacterAbilities.Select(ca => new Ability
-                {
-                    Id = ca.Ability!.Id,
-                    Name = ca.Ability.Name,
-                    Description = ca.Ability.Description,
-                    IsTech = ca.Ability.IsTech,
-                    IsHeal = ca.Ability.IsHeal,
-                    Power = ca.Ability.Power,
-                    Speed = ca.Ability.Speed,
-                    Accuracy = ca.Ability.Accuracy
-                }).ToArray()
+                Abilities = MapAbilities(ent.CharacterAbilities)
             };
         }
 
@@ -53,6 +71,7 @@ namespace RacMonsters.Server.Repositories.Characters
             var ent = await _db.Characters
                 .Include(c => c.CharacterAbilities)
                     .ThenInclude(ca => ca.Ability)
+                        .ThenInclude(a => a!.StatusEffects)
                 .OrderBy(c => c.Id)
                 .ToArrayAsync();
 
@@ -69,6 +88,7 @@ namespace RacMonsters.Server.Repositories.Characters
             var ents = await _db.Characters
                 .Include(c => c.CharacterAbilities)
                     .ThenInclude(ca => ca.Ability)
+                        .ThenInclude(a => a!.StatusEffects)
                 .ToArrayAsync();
 
             return ents.Select(ent => new Character
@@ -82,17 +102,7 @@ namespace RacMonsters.Server.Repositories.Characters
                 Defense = ent.Defense,
                 TechAttack = ent.TechAttack,
                 TechDefense = ent.TechDefense,
-                Abilities = ent.CharacterAbilities.Select(ca => new Ability
-                {
-                    Id = ca.Ability!.Id,
-                    Name = ca.Ability.Name,
-                    Description = ca.Ability.Description,
-                    IsTech = ca.Ability.IsTech,
-                    IsHeal = ca.Ability.IsHeal,
-                    Power = ca.Ability.Power,
-                    Speed = ca.Ability.Speed,
-                    Accuracy = ca.Ability.Accuracy
-                }).ToArray()
+                Abilities = MapAbilities(ent.CharacterAbilities)
             }).ToArray();
         }
     }

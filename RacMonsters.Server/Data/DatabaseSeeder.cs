@@ -124,7 +124,9 @@ namespace RacMonsters.Server.Data
                     new CharacterEntity { Id = 14, Name = "Belassie", ImageUrl = "public/Belassie.png", MaxHealth = 35, CurrentHealth = 35, Attack = 12, Defense = 9, TechAttack = 5, TechDefense = 5 },
                     new CharacterEntity { Id = 15, Name = "Sailesh", ImageUrl = "public/Sailesh.png", MaxHealth = 48, CurrentHealth = 48, Attack = 8, Defense = 5, TechAttack = 10, TechDefense = 8 },
                     new CharacterEntity { Id = 16, Name = "Andy", ImageUrl = "public/Andy.png", MaxHealth = 46, CurrentHealth = 46, Attack = 4, Defense = 10, TechAttack = 11, TechDefense = 7 },
-                    new CharacterEntity { Id = 17, Name = "Aaron", ImageUrl = "public/Aaron.png", MaxHealth = 44, CurrentHealth = 44, Attack = 13, Defense = 7, TechAttack = 8, TechDefense = 7 }
+                    new CharacterEntity { Id = 17, Name = "Aaron", ImageUrl = "public/Aaron.png", MaxHealth = 44, CurrentHealth = 44, Attack = 13, Defense = 7, TechAttack = 8, TechDefense = 7 },
+                    new CharacterEntity { Id = 18, Name = "Haarunnya", ImageUrl = "public/Haarunnya.png", MaxHealth = 48, CurrentHealth = 48, Attack = 9, Defense = 9, TechAttack = 8, TechDefense = 8 },
+                    new CharacterEntity { Id = 19, Name = "Brooke", ImageUrl = "public/Brooke.png", MaxHealth = 48, CurrentHealth = 48, Attack = 9, Defense = 9, TechAttack = 8, TechDefense = 8 }
                 };
 
                 // Characters table uses identity on Id; enable IDENTITY_INSERT to allow explicit Ids in seed
@@ -214,6 +216,28 @@ namespace RacMonsters.Server.Data
                 };
 
                 _db.CharacterAbilities.AddRange(mappings);
+                await _db.SaveChangesAsync();
+            }
+
+            // Status Effects for Abilities
+            if (!_db.AbilityStatusEffects.Any())
+            {
+                var statusEffects = new[]
+                {
+                    // Ability 26 - Spilled Tea (Burn effect)
+                    new AbilityStatusEffectEntity { AbilityId = 26, StatusEffectType = 0, Duration = 3, Power = 4, ApplyChance = 0.6, ApplyToSelf = false },
+
+                    // Ability 65 - Feuer frei! (Strong burn effect)
+                    new AbilityStatusEffectEntity { AbilityId = 65, StatusEffectType = 0, Duration = 4, Power = 6, ApplyChance = 0.8, ApplyToSelf = false },
+
+                    // Example: Add Power Up to an ability (Attack buff)
+                    // new AbilityStatusEffectEntity { AbilityId = X, StatusEffectType = 3, Duration = 3, Modifier = 0.5, ApplyChance = 1.0, ApplyToSelf = true },
+
+                    // Example: Add Defense Down debuff
+                    // new AbilityStatusEffectEntity { AbilityId = X, StatusEffectType = 6, Duration = 2, Modifier = 0.3, ApplyChance = 0.7, ApplyToSelf = false },
+                };
+
+                _db.AbilityStatusEffects.AddRange(statusEffects);
                 await _db.SaveChangesAsync();
             }
         }

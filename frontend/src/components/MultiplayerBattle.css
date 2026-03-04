@@ -450,3 +450,140 @@
         padding: 8px 20px;
     }
 }
+
+/* Status Effects */
+.status-effects {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+    padding: 10px;
+    min-height: 40px;
+}
+
+.status-effect {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+    border: 2px solid #555;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 1.1rem;
+    cursor: help;
+    transition: all 0.3s ease;
+    animation: statusAppear 0.3s ease-out;
+}
+
+.status-effect:hover {
+    transform: scale(1.1);
+    border-color: #777;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.status-icon {
+    font-size: 1.2rem;
+}
+
+.status-duration {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #4CAF50;
+    min-width: 16px;
+    text-align: center;
+}
+
+@keyframes statusAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Character stats */
+.character-stats-compact {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.stat-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.stat-icon {
+    font-size: 1.3rem;
+}
+
+.stat-compact span:last-child {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* Ability display enhancements for status effects */
+.ability-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.ability-type-badge {
+    font-size: 1.5rem;
+}
+
+.ability-description {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #888;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.ability-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.health-bar-text {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    padding: 0 10px;
+}
+
+.character-label {
+    font-size: 1.1rem;
+    color: #aaa;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.ability-actions {
+    margin-top: 20px;
+}
+
+.game-over-message {
+    font-size: 1.5rem !important;
+    margin: 20px 0 !important;
+}
+
+.game-over-info {
+    color: #666 !important;
+    font-size: 1rem !important;
+}

@@ -12,4 +12,7 @@ public class RoundAction
     // Structured numeric fields for frontend consumption
     public int? Damage { get; set; }
     public int? HealAmount { get; set; }
+
+    // Status effects applied this round
+    public List<string> StatusEffectMessages { get; set; } = new List<string>();
 }

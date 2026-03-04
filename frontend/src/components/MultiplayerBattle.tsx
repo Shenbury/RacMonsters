@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { signalRService } from '../services/signalRService';
-import type { BattleState, Character } from '../types';
+import type { BattleState, Character, StatusEffect, StatusEffectType } from '../types';
 import './MultiplayerBattle.css';
 
 interface Props {
@@ -124,6 +124,31 @@ export function MultiplayerBattle({
         return '#f44336';
     };
 
+    const getStatusEffectIcon = (type: StatusEffectType): string => {
+        switch (type) {
+            case 0: return '🔥'; // Burn
+            case 1: return '☠️'; // Poison
+            case 2: return '🩸'; // Bleed
+            case 3: return '⚔️↑'; // AttackUp
+            case 4: return '⚔️↓'; // AttackDown
+            case 5: return '🛡️↑'; // DefenseUp
+            case 6: return '🛡️↓'; // DefenseDown
+            case 7: return '⚡↑'; // TechAttackUp
+            case 8: return '⚡↓'; // TechAttackDown
+            case 9: return '🔰↑'; // TechDefenseUp
+            case 10: return '🔰↓'; // TechDefenseDown
+            case 11: return '🎯↑'; // AccuracyUp
+            case 12: return '🎯↓'; // AccuracyDown
+            case 13: return '💨↑'; // EvasionUp
+            case 14: return '💨↓'; // EvasionDown
+            case 15: return '⚡'; // Charging
+            case 16: return '🚫'; // HealBlock
+            case 17: return '💫'; // Stunned
+            case 18: return '✨'; // Protected
+            default: return '❓';
+        }
+    };
+
     if (!opponentChar) {
         return (
             <div className="multiplayer-battle loading">
@@ -181,6 +206,17 @@ export function MultiplayerBattle({
                             <span>{playerChar.techAttack}</span>
                         </div>
                     </div>
+                    {/* Status Effects */}
+                    {playerChar.activeStatusEffects && playerChar.activeStatusEffects.length > 0 && (
+                        <div className="status-effects">
+                            {playerChar.activeStatusEffects.map((effect, idx) => (
+                                <div key={idx} className="status-effect" title={`${effect.name} (${effect.duration} turns)`}>
+                                    <span className="status-icon">{getStatusEffectIcon(effect.type)}</span>
+                                    <span className="status-duration">{effect.duration}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* VS indicator */}
@@ -218,6 +254,17 @@ export function MultiplayerBattle({
                             <span>{opponentChar.techAttack}</span>
                         </div>
                     </div>
+                    {/* Status Effects */}
+                    {opponentChar.activeStatusEffects && opponentChar.activeStatusEffects.length > 0 && (
+                        <div className="status-effects">
+                            {opponentChar.activeStatusEffects.map((effect, idx) => (
+                                <div key={idx} className="status-effect" title={`${effect.name} (${effect.duration} turns)`}>
+                                    <span className="status-icon">{getStatusEffectIcon(effect.type)}</span>
+                                    <span className="status-duration">{effect.duration}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

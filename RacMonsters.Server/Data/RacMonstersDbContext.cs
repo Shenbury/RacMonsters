@@ -92,6 +92,23 @@ namespace RacMonsters.Server.Data
         public double Accuracy { get; set; }
 
         public ICollection<CharacterAbilityEntity> CharacterAbilities { get; set; } = new List<CharacterAbilityEntity>();
+        public ICollection<AbilityStatusEffectEntity> StatusEffects { get; set; } = new List<AbilityStatusEffectEntity>();
+    }
+
+    public class AbilityStatusEffectEntity
+    {
+        [Key]
+        public int Id { get; set; }
+        public int AbilityId { get; set; }
+        public AbilityEntity? Ability { get; set; }
+
+        public int StatusEffectType { get; set; }
+        public int Duration { get; set; }
+        public int Power { get; set; }
+        public double Modifier { get; set; } = 1.0;
+        public double ApplyChance { get; set; } = 1.0;
+        public bool ApplyToSelf { get; set; } = false;
+        public bool RequiresCharging { get; set; } = false;
     }
 
     public class CharacterEntity
@@ -132,6 +149,7 @@ namespace RacMonsters.Server.Data
         public DbSet<AbilityEntity> Abilities { get; set; } = null!;
         public DbSet<CharacterEntity> Characters { get; set; } = null!;
         public DbSet<CharacterAbilityEntity> CharacterAbilities { get; set; } = null!;
+        public DbSet<AbilityStatusEffectEntity> AbilityStatusEffects { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -198,6 +216,20 @@ namespace RacMonsters.Server.Data
                 eb.HasKey(e => new { e.CharacterId, e.AbilityId });
                 eb.HasOne(ca => ca.Character).WithMany(c => c.CharacterAbilities).HasForeignKey(ca => ca.CharacterId).OnDelete(DeleteBehavior.Cascade);
                 eb.HasOne(ca => ca.Ability).WithMany(a => a.CharacterAbilities).HasForeignKey(ca => ca.AbilityId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AbilityStatusEffectEntity>(eb =>
+            {
+                eb.ToTable("AbilityStatusEffects");
+                eb.HasKey(e => e.Id);
+                eb.HasOne(e => e.Ability).WithMany(a => a.StatusEffects).HasForeignKey(e => e.AbilityId).OnDelete(DeleteBehavior.Cascade);
+                eb.Property(e => e.StatusEffectType).HasColumnType("int");
+                eb.Property(e => e.Duration).HasColumnType("int");
+                eb.Property(e => e.Power).HasColumnType("int");
+                eb.Property(e => e.Modifier).HasColumnType("float");
+                eb.Property(e => e.ApplyChance).HasColumnType("float");
+                eb.Property(e => e.ApplyToSelf).HasColumnType("bit");
+                eb.Property(e => e.RequiresCharging).HasColumnType("bit");
             });
 
             modelBuilder.Entity<LeaderboardEntity>(eb =>

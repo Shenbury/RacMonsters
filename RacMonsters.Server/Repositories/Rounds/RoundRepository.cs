@@ -1,4 +1,5 @@
 ﻿using RacMonsters.Server.Models;
+using RacMonsters.Server.Services.Battles;
 
 namespace RacMonsters.Server.Repositories.Rounds
 {
@@ -12,74 +13,95 @@ namespace RacMonsters.Server.Repositories.Rounds
 
         public async Task<Round> ExecuteRound(Round executeRound)
         {
-            // very small deterministic resolution: higher speed goes first
             var a = executeRound.PlayerA.Character;
             var b = executeRound.PlayerB.Character;
 
             var moveA = executeRound.PlayerA.Ability;
             var moveB = executeRound.PlayerB.Ability;
 
-            void ApplyMove(Character attacker, Character defender, Ability ability, RoundAction action)
+            var resultMessages = new List<string>();
+            var statusMessages = new List<string>();
+
+            // Process start-of-turn status effects (DoTs, etc.)
+            StatusEffectProcessor.ProcessStartOfTurnEffects(a, resultMessages);
+            StatusEffectProcessor.ProcessStartOfTurnEffects(b, resultMessages);
+
+            // Check if either character is defeated by DoT
+            if (a.CurrentHealth <= 0 || b.CurrentHealth <= 0)
             {
-                // Check accuracy: ability may miss and have no effect
-                var hitRoll = System.Random.Shared.NextDouble();
-                if (ability.Accuracy < 1.0 && hitRoll > ability.Accuracy)
+                // Battle ended due to DoT
+                executeRound.PlayerA.ResultMessage = a.CurrentHealth <= 0 ? "Defeated by status effect" : string.Join(" | ", resultMessages);
+                executeRound.PlayerB.ResultMessage = b.CurrentHealth <= 0 ? "Defeated by status effect" : string.Join(" | ", resultMessages);
+
+                StatusEffectProcessor.ProcessEndOfTurnEffects(a, statusMessages);
+                StatusEffectProcessor.ProcessEndOfTurnEffects(b, statusMessages);
+
+                return await Task.FromResult(executeRound);
+            }
+
+            // Determine turn order based on speed
+            bool aGoesFirst = moveA.Speed >= moveB.Speed;
+
+            if (aGoesFirst)
+            {
+                // Character A goes first
+                var resultA = StatusEffectProcessor.ProcessAbilityWithStatusEffects(a, moveA, b);
+                executeRound.PlayerA.Hit = resultA.hit;
+                executeRound.PlayerA.Damage = resultA.damage;
+                executeRound.PlayerA.HealAmount = resultA.heal;
+                executeRound.PlayerA.ResultMessage = StatusEffectProcessor.FormatAbilityResult(a, moveA, b, resultA.damage, resultA.heal, resultA.hit);
+                executeRound.PlayerA.StatusEffectMessages = resultA.statusMessages;
+                resultMessages.Add(executeRound.PlayerA.ResultMessage);
+
+                // Character B goes second (if still alive and not stunned)
+                if (b.CurrentHealth > 0)
                 {
-                    // missed — set flag and message
-                    action.Hit = false;
-                    action.ResultMessage = $"{attacker.Name} missed!";
-                    return;
-                }
-
-                // Determine relevant stats
-                var attackStat = ability.IsTech ? attacker.TechAttack : attacker.Attack;
-                var defenseStat = ability.IsTech ? defender.TechDefense : defender.Defense;
-
-                action.Hit = true;
-
-                if (ability.IsHeal)
-                {
-                    // Heal amount is random between 1 and (Power + attackStat), minimum 1
-                    var maxHeal = Math.Max(1, ability.Power + attackStat);
-                    var healAmount = System.Random.Shared.Next(1, maxHeal + 1);
-                    attacker.CurrentHealth = Math.Min(attacker.MaxHealth, attacker.CurrentHealth + healAmount);
-                    action.HealAmount = healAmount;
-                    action.ResultMessage = $"{attacker.Name} healed {healAmount} HP.";
+                    var resultB = StatusEffectProcessor.ProcessAbilityWithStatusEffects(b, moveB, a);
+                    executeRound.PlayerB.Hit = resultB.hit;
+                    executeRound.PlayerB.Damage = resultB.damage;
+                    executeRound.PlayerB.HealAmount = resultB.heal;
+                    executeRound.PlayerB.ResultMessage = StatusEffectProcessor.FormatAbilityResult(b, moveB, a, resultB.damage, resultB.heal, resultB.hit);
+                    executeRound.PlayerB.StatusEffectMessages = resultB.statusMessages;
+                    resultMessages.Add(executeRound.PlayerB.ResultMessage);
                 }
                 else
                 {
-                    // Damage = (random 1..Power+attackStat) - (random 1..defenseStat)
-                    var maxAttack = Math.Max(1, ability.Power + attackStat);
-                    var attackRoll = System.Random.Shared.Next(1, maxAttack + 1);
-
-                    int defenseRoll;
-                    if (defenseStat <= 0)
-                    {
-                        defenseRoll = 0;
-                    }
-                    else
-                    {
-                        defenseRoll = System.Random.Shared.Next(1, defenseStat + 1);
-                    }
-
-                    var rawDamage = attackRoll - defenseRoll;
-                    var damage = Math.Max(1, rawDamage);
-                    defender.CurrentHealth = Math.Max(0, defender.CurrentHealth - damage);
-                    action.Damage = damage;
-                    action.ResultMessage = $"{attacker.Name} dealt {damage} damage to {defender.Name}.";
+                    executeRound.PlayerB.Hit = false;
+                    executeRound.PlayerB.ResultMessage = $"{b.Name} was defeated before acting";
                 }
-            }
-
-            if (moveA.Speed >= moveB.Speed)
-            {
-                ApplyMove(a, b, moveA, executeRound.PlayerA);
-                if (b.CurrentHealth > 0) ApplyMove(b, a, moveB, executeRound.PlayerB);
             }
             else
             {
-                ApplyMove(b, a, moveB, executeRound.PlayerB);
-                if (a.CurrentHealth > 0) ApplyMove(a, b, moveA, executeRound.PlayerA);
+                // Character B goes first
+                var resultB = StatusEffectProcessor.ProcessAbilityWithStatusEffects(b, moveB, a);
+                executeRound.PlayerB.Hit = resultB.hit;
+                executeRound.PlayerB.Damage = resultB.damage;
+                executeRound.PlayerB.HealAmount = resultB.heal;
+                executeRound.PlayerB.ResultMessage = StatusEffectProcessor.FormatAbilityResult(b, moveB, a, resultB.damage, resultB.heal, resultB.hit);
+                executeRound.PlayerB.StatusEffectMessages = resultB.statusMessages;
+                resultMessages.Add(executeRound.PlayerB.ResultMessage);
+
+                // Character A goes second (if still alive and not stunned)
+                if (a.CurrentHealth > 0)
+                {
+                    var resultA = StatusEffectProcessor.ProcessAbilityWithStatusEffects(a, moveA, b);
+                    executeRound.PlayerA.Hit = resultA.hit;
+                    executeRound.PlayerA.Damage = resultA.damage;
+                    executeRound.PlayerA.HealAmount = resultA.heal;
+                    executeRound.PlayerA.ResultMessage = StatusEffectProcessor.FormatAbilityResult(a, moveA, b, resultA.damage, resultA.heal, resultA.hit);
+                    executeRound.PlayerA.StatusEffectMessages = resultA.statusMessages;
+                    resultMessages.Add(executeRound.PlayerA.ResultMessage);
+                }
+                else
+                {
+                    executeRound.PlayerA.Hit = false;
+                    executeRound.PlayerA.ResultMessage = $"{a.Name} was defeated before acting";
+                }
             }
+
+            // Process end-of-turn effects (decrement durations, remove expired effects)
+            StatusEffectProcessor.ProcessEndOfTurnEffects(a, statusMessages);
+            StatusEffectProcessor.ProcessEndOfTurnEffects(b, statusMessages);
 
             return await Task.FromResult(executeRound);
         }

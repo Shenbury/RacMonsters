@@ -145,79 +145,98 @@ namespace RacMonsters.Server.Services.Battles
         {
             var player1Character = battle.CharacterA;
             var player2Character = battle.CharacterB;
-
-            // Get the selected abilities
-            var player1Ability = player1Character.Abilities.FirstOrDefault(a => a.Id == battle.Player1SelectedAbilityId);
-            var player2Ability = player2Character.Abilities.FirstOrDefault(a => a.Id == battle.Player2SelectedAbilityId);
-
-            if (player1Ability == null || player2Ability == null)
-            {
-                throw new InvalidOperationException("One or both abilities not found");
-            }
-
-            // Determine turn order based on ability speed
-            bool player1First = player1Ability.Speed >= player2Ability.Speed;
-
-            var firstCharacter = player1First ? player1Character : player2Character;
-            var firstAbility = player1First ? player1Ability : player2Ability;
-            var secondCharacter = player1First ? player2Character : player1Character;
-            var secondAbility = player1First ? player2Ability : player1Ability;
-
             var resultMessages = new List<string>();
+            var statusMessages = new List<string>();
 
-            // Process first attack
-            var (firstDamage, firstHeal, firstHit) = ProcessAbility(firstCharacter, firstAbility, secondCharacter);
-            var firstMessage = FormatAbilityResult(firstCharacter, firstAbility, secondCharacter, firstDamage, firstHeal, firstHit);
-            resultMessages.Add(firstMessage);
+            // Process start-of-turn status effects (DoTs, etc.)
+            StatusEffectProcessor.ProcessStartOfTurnEffects(player1Character, resultMessages);
+            StatusEffectProcessor.ProcessStartOfTurnEffects(player2Character, resultMessages);
 
-            // Check if second character is still alive
-            bool battleOver = secondCharacter.CurrentHealth <= 0;
-            int secondDamage = 0;
-            int secondHeal = 0;
-            bool secondHit = false;
+            // Check if either player is defeated by DoT
+            bool battleOver = player1Character.CurrentHealth <= 0 || player2Character.CurrentHealth <= 0;
 
             if (!battleOver)
             {
-                // Process second attack
-                (secondDamage, secondHeal, secondHit) = ProcessAbility(secondCharacter, secondAbility, firstCharacter);
-                var secondMessage = FormatAbilityResult(secondCharacter, secondAbility, firstCharacter, secondDamage, secondHeal, secondHit);
-                resultMessages.Add(secondMessage);
+                // Get the selected abilities
+                var player1Ability = player1Character.Abilities.FirstOrDefault(a => a.Id == battle.Player1SelectedAbilityId);
+                var player2Ability = player2Character.Abilities.FirstOrDefault(a => a.Id == battle.Player2SelectedAbilityId);
 
-                battleOver = firstCharacter.CurrentHealth <= 0;
-            }
-
-            // Create round record with both actions
-            var round = new Round
-            {
-                PlayerA = new RoundAction
+                if (player1Ability == null || player2Ability == null)
                 {
-                    Character = player1Character,
-                    Ability = player1Ability,
-                    Hit = player1First ? firstHit : secondHit,
-                    ResultMessage = player1First ? firstMessage : (battleOver && !player1First ? "Defeated before action" : FormatAbilityResult(player1Character, player1Ability, player2Character, secondDamage, secondHeal, secondHit)),
-                    Damage = player1First ? firstDamage : secondDamage,
-                    HealAmount = player1First ? firstHeal : secondHeal
-                },
-                PlayerB = new RoundAction
-                {
-                    Character = player2Character,
-                    Ability = player2Ability,
-                    Hit = !player1First ? firstHit : secondHit,
-                    ResultMessage = !player1First ? firstMessage : (battleOver && player1First ? "Defeated before action" : FormatAbilityResult(player2Character, player2Ability, player1Character, secondDamage, secondHeal, secondHit)),
-                    Damage = !player1First ? firstDamage : secondDamage,
-                    HealAmount = !player1First ? firstHeal : secondHeal
+                    throw new InvalidOperationException("One or both abilities not found");
                 }
-            };
 
-            // Add round to battle
-            var rounds = battle.Rounds.ToList();
-            rounds.Add(round);
-            battle.Rounds = rounds.ToArray();
+                // Determine turn order based on ability speed
+                bool player1First = player1Ability.Speed >= player2Ability.Speed;
+
+                var firstCharacter = player1First ? player1Character : player2Character;
+                var firstAbility = player1First ? player1Ability : player2Ability;
+                var secondCharacter = player1First ? player2Character : player1Character;
+                var secondAbility = player1First ? player2Ability : player1Ability;
+
+                // Process first action
+                var firstResult = StatusEffectProcessor.ProcessAbilityWithStatusEffects(firstCharacter, firstAbility, secondCharacter);
+                var firstMessage = StatusEffectProcessor.FormatAbilityResult(firstCharacter, firstAbility, secondCharacter, firstResult.damage, firstResult.heal, firstResult.hit);
+                resultMessages.Add(firstMessage);
+                statusMessages.AddRange(firstResult.statusMessages);
+
+                // Check if second character is still alive
+                battleOver = secondCharacter.CurrentHealth <= 0;
+                var secondResult = (damage: 0, heal: 0, hit: false, statusMessages: new List<string>());
+
+                if (!battleOver)
+                {
+                    // Process second action
+                    secondResult = StatusEffectProcessor.ProcessAbilityWithStatusEffects(secondCharacter, secondAbility, firstCharacter);
+                    var secondMessage = StatusEffectProcessor.FormatAbilityResult(secondCharacter, secondAbility, firstCharacter, secondResult.damage, secondResult.heal, secondResult.hit);
+                    resultMessages.Add(secondMessage);
+                    statusMessages.AddRange(secondResult.statusMessages);
+
+                    battleOver = firstCharacter.CurrentHealth <= 0;
+                }
+
+                // Process end-of-turn effects (decrement durations, remove expired effects)
+                StatusEffectProcessor.ProcessEndOfTurnEffects(player1Character, statusMessages);
+                StatusEffectProcessor.ProcessEndOfTurnEffects(player2Character, statusMessages);
+
+                resultMessages.AddRange(statusMessages);
+
+                // Create round record with both actions
+                var round = new Round
+                {
+                    PlayerA = new RoundAction
+                    {
+                        Character = player1Character,
+                        Ability = player1Ability,
+                        Hit = player1First ? firstResult.hit : secondResult.hit,
+                        ResultMessage = player1First ? firstMessage : StatusEffectProcessor.FormatAbilityResult(player1Character, player1Ability, player2Character, secondResult.damage, secondResult.heal, secondResult.hit),
+                        Damage = player1First ? firstResult.damage : secondResult.damage,
+                        HealAmount = player1First ? firstResult.heal : secondResult.heal,
+                        StatusEffectMessages = player1First ? firstResult.statusMessages : secondResult.statusMessages
+                    },
+                    PlayerB = new RoundAction
+                    {
+                        Character = player2Character,
+                        Ability = player2Ability,
+                        Hit = !player1First ? firstResult.hit : secondResult.hit,
+                        ResultMessage = !player1First ? firstMessage : StatusEffectProcessor.FormatAbilityResult(player2Character, player2Ability, player1Character, secondResult.damage, secondResult.heal, secondResult.hit),
+                        Damage = !player1First ? firstResult.damage : secondResult.damage,
+                        HealAmount = !player1First ? firstResult.heal : secondResult.heal,
+                        StatusEffectMessages = !player1First ? firstResult.statusMessages : secondResult.statusMessages
+                    }
+                };
+
+                // Add round to battle
+                var rounds = battle.Rounds.ToList();
+                rounds.Add(round);
+                battle.Rounds = rounds.ToArray();
+            }
 
             // Check if battle is over
             string? winner = null;
-            if (battleOver)
+            if (battleOver || player1Character.CurrentHealth <= 0 || player2Character.CurrentHealth <= 0)
             {
+                battleOver = true;
                 var winningCharacter = player1Character.CurrentHealth > 0 ? player1Character : player2Character;
                 battle.WinningCharacter = winningCharacter.Name;
                 winner = player1Character.CurrentHealth > 0 ? "player1" : "player2";
@@ -250,63 +269,14 @@ namespace RacMonsters.Server.Services.Battles
                 BattleId = battle.Id,
                 PlayerCharacter = player1Character,
                 OpponentCharacter = player2Character,
-                LastRound = round,
+                LastRound = battle.Rounds.LastOrDefault(),
                 IsGameOver = battleOver,
                 Winner = winner,
-                Message = string.Join(" ", resultMessages),
+                Message = string.Join(" | ", resultMessages),
                 TriggeringPlayerConnectionId = triggeringConnectionId,
                 TriggeringPlayerName = triggeringPlayerName,
                 TriggeringPlayerCharacter = triggeringPlayerCharacter
             };
-        }
-
-        private (int damage, int heal, bool hit) ProcessAbility(Character attacker, Ability ability, Character defender)
-        {
-            var random = new Random();
-            var hitSuccess = random.NextDouble() < ability.Accuracy;
-
-            if (!hitSuccess)
-            {
-                return (0, 0, false);
-            }
-
-            if (ability.IsHeal)
-            {
-                int healAmount = ability.Power;
-                attacker.CurrentHealth = Math.Min(
-                    attacker.CurrentHealth + healAmount,
-                    attacker.MaxHealth
-                );
-                return (0, healAmount, true);
-            }
-            else
-            {
-                // Calculate damage based on ability type
-                var attackStat = ability.IsTech ? attacker.TechAttack : attacker.Attack;
-                var defenseStat = ability.IsTech ? defender.TechDefense : defender.Defense;
-
-                int damage = Math.Max(1, (ability.Power + attackStat) - defenseStat);
-                defender.CurrentHealth = Math.Max(0, defender.CurrentHealth - damage);
-
-                return (damage, 0, true);
-            }
-        }
-
-        private string FormatAbilityResult(Character attacker, Ability ability, Character defender, int damage, int heal, bool hit)
-        {
-            if (!hit)
-            {
-                return $"{attacker.Name} tried to use {ability.Name} but it missed!";
-            }
-
-            if (ability.IsHeal)
-            {
-                return $"{attacker.Name} used {ability.Name} and healed for {heal} HP!";
-            }
-            else
-            {
-                return $"{attacker.Name} used {ability.Name} on {defender.Name} for {damage} damage!";
-            }
         }
 
         public async Task<bool> IsPlayersTurn(int battleId, string connectionId)
