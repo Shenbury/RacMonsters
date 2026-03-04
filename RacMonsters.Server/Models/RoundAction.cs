@@ -2,8 +2,13 @@ namespace RacMonsters.Server.Models;
 
 public class RoundAction
 {
+    public ActionType Type { get; set; } = ActionType.Ability;
     public Character Character { get; set; } = null!;
     public Ability Ability { get; set; } = null!;
+
+    // For switch actions
+    public int? SwitchToCharacterIndex { get; set; }
+
     // Whether the chosen ability hit its target (or succeeded for heals)
     public bool? Hit { get; set; }
 

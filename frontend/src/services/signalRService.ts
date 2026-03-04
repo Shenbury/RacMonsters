@@ -75,7 +75,7 @@ class SignalRService {
 
     async selectAbility(battleId: number, abilityId: number): Promise<void> {
         if (!this.connection) throw new Error("Not connected to SignalR");
-        
+
         try {
             await this.connection.invoke("SelectAbility", battleId, abilityId);
             console.log(`Selected ability ${abilityId} in battle ${battleId}`);
@@ -83,6 +83,53 @@ class SignalRService {
             console.error("Error selecting ability:", error);
             throw error;
         }
+    }
+
+    // Team Battle Methods
+    async switchCharacter(battleId: number, newCharacterIndex: number): Promise<void> {
+        if (!this.connection) throw new Error("Not connected to SignalR");
+
+        try {
+            await this.connection.invoke("SwitchCharacter", battleId, newCharacterIndex);
+            console.log(`Switched to character index ${newCharacterIndex} in battle ${battleId}`);
+        } catch (error) {
+            console.error("Error switching character:", error);
+            throw error;
+        }
+    }
+
+    async joinTeamMatchmaking(playerName: string, characterIds: number[]): Promise<void> {
+        if (!this.connection) throw new Error("Not connected to SignalR");
+
+        try {
+            await this.connection.invoke("JoinTeamMatchmaking", playerName, characterIds);
+            console.log(`Joined team matchmaking as ${playerName} with characters ${characterIds.join(',')}`);
+        } catch (error) {
+            console.error("Error joining team matchmaking:", error);
+            throw error;
+        }
+    }
+
+    onCharacterSwitched(callback: (data: any) => void): void {
+        this.connection?.on("CharacterSwitched", (data: any) => {
+            console.log("Character switched:", data);
+            callback(data);
+        });
+    }
+
+    onOpponentSwitched(callback: (data: any) => void): void {
+        this.connection?.on("OpponentSwitched", (data: any) => {
+            console.log("Opponent switched:", data);
+            callback(data);
+        });
+    }
+
+    offCharacterSwitched(): void {
+        this.connection?.off("CharacterSwitched");
+    }
+
+    offOpponentSwitched(): void {
+        this.connection?.off("OpponentSwitched");
     }
 
     onMatchmakingStatus(callback: (status: string, queueSize: number) => void): void {

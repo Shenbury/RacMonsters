@@ -20,5 +20,14 @@ namespace RacMonsters.Server.Services.Battles
         Task<List<Battle>> GetBattlesWithExpiredTurns();
         Task ProcessAutoMove(int battleId);
         Task EndBattleByForfeit(int battleId, string winnerConnectionId);
+
+        // Team Battle methods - Phase 2
+        Task<int> CreateTeamBattle(
+            string player1ConnectionId,
+            List<int> player1CharacterIds,
+            string player2ConnectionId,
+            List<int> player2CharacterIds);
+
+        Task<BattleResult> ProcessSwitchCharacter(int battleId, string connectionId, int newCharacterIndex);
     }
 }

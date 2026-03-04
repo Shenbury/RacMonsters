@@ -20,6 +20,9 @@ public class Character
     // Active status effects
     public List<StatusEffect> ActiveStatusEffects { get; set; } = new List<StatusEffect>();
 
+    // Helper property for team battles
+    public bool IsKnockedOut => CurrentHealth <= 0;
+
     // Calculate effective stats with status effect modifiers
     public int GetEffectiveAttack()
     {

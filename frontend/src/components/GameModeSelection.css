@@ -30,10 +30,10 @@
 
 .mode-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 40px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
     margin: 0 auto 40px;
-    max-width: 800px;
+    max-width: 1200px;
 }
 
 .mode-card {
@@ -90,6 +90,19 @@
 
 .multiplayer-card::before {
     background: linear-gradient(135deg, transparent 0%, rgba(33, 150, 243, 0.1) 100%);
+}
+
+.teambattle-card {
+    border-color: #FF9F1C;
+}
+
+.teambattle-card:hover {
+    border-color: #FFB84D;
+    box-shadow: 0 15px 40px rgba(255, 159, 28, 0.4);
+}
+
+.teambattle-card::before {
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 159, 28, 0.1) 100%);
 }
 
 .mode-icon {
@@ -153,6 +166,16 @@
 
 .multiplayer-card .mode-button:hover {
     background: linear-gradient(145deg, #42A5F5, #2196F3);
+    transform: scale(1.05);
+}
+
+.team-button {
+    background: linear-gradient(145deg, #FF9F1C, #FF8C00);
+    color: white;
+}
+
+.teambattle-card .mode-button:hover {
+    background: linear-gradient(145deg, #FFB84D, #FF9F1C);
     transform: scale(1.05);
 }
 

@@ -2,7 +2,7 @@ import './GameModeSelection.css';
 
 interface Props {
     playerName: string;
-    onSelectMode: (mode: 'singleplayer' | 'multiplayer') => void;
+    onSelectMode: (mode: 'singleplayer' | 'multiplayer' | 'teambattle') => void;
 }
 
 export function GameModeSelection({ playerName, onSelectMode }: Props) {
@@ -11,7 +11,7 @@ export function GameModeSelection({ playerName, onSelectMode }: Props) {
             <div className="mode-container">
                 <h1 className="mode-title">Welcome, {playerName}!</h1>
                 <p className="mode-subtitle">Choose your game mode</p>
-                
+
                 <div className="mode-cards">
                     <div 
                         className="mode-card singleplayer-card"
@@ -49,7 +49,7 @@ export function GameModeSelection({ playerName, onSelectMode }: Props) {
                                     stroke="#FF9800" strokeWidth="4" strokeLinecap="round" fill="none" />
                             </svg>
                         </div>
-                        <h2>Multiplayer</h2>
+                        <h2>Multiplayer 1v1</h2>
                         <p className="mode-description">
                             Challenge real players online<br/>
                             Test your strategy<br/>
@@ -59,10 +59,35 @@ export function GameModeSelection({ playerName, onSelectMode }: Props) {
                             Find Match
                         </button>
                     </div>
+
+                    <div 
+                        className="mode-card teambattle-card"
+                        onClick={() => onSelectMode('teambattle')}
+                    >
+                        <div className="mode-icon">
+                            <svg viewBox="0 0 100 100" width="80" height="80">
+                                <circle cx="25" cy="25" r="8" fill="#FF6B6B" />
+                                <circle cx="50" cy="25" r="8" fill="#4ECDC4" />
+                                <circle cx="75" cy="25" r="8" fill="#FFE66D" />
+                                <circle cx="37.5" cy="50" r="8" fill="#95E1D3" />
+                                <rect x="15" y="60" width="70" height="5" fill="#FF9F1C" rx="2" />
+                                <text x="50" y="85" fontSize="20" fill="#FF9F1C" textAnchor="middle" fontWeight="bold">4v4</text>
+                            </svg>
+                        </div>
+                        <h2>Team Battle 4v4</h2>
+                        <p className="mode-description">
+                            Build a team of 4 characters<br/>
+                            Switch fighters mid-battle<br/>
+                            Strategic team combat
+                        </p>
+                        <button className="btn mode-button team-button">
+                            Team Battle
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mode-hint">
-                    <p>💡 Tip: Start with Single Player to learn the characters and abilities!</p>
+                    <p>💡 Tip: Team Battle lets you switch between 4 characters during combat!</p>
                 </div>
             </div>
         </div>

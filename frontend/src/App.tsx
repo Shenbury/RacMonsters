@@ -4,6 +4,7 @@ import './App.css'
 import { GameModeSelection } from './components/GameModeSelection'
 import { MultiplayerLobby } from './components/MultiplayerLobby'
 import { CharacterSelection } from './components/CharacterSelection'
+import { TeamCharacterSelection } from './components/TeamCharacterSelection'
 import { MultiplayerBattle } from './components/MultiplayerBattle'
 import type { Character as BaseCharacter, StatusEffect, StatusEffectType } from './types'
 
@@ -91,7 +92,7 @@ const App: React.FC = () => {
     const [enemy, setEnemy] = useState<Character | null>(null)
     const [opponents, setOpponents] = useState<Character[]>([])
     const [gameState, setGameState] = useState<GameState>('start')
-    const [gameMode, setGameMode] = useState<'singleplayer' | 'multiplayer' | null>(null)
+    const [gameMode, setGameMode] = useState<'singleplayer' | 'multiplayer' | 'teambattle' | null>(null)
     const [initialOpponentsCount, setInitialOpponentsCount] = useState<number>(0)
     const [defeatedEnemy, setDefeatedEnemy] = useState<Character | null>(null)
     const [nextEnemy, setNextEnemy] = useState<Character | null>(null)
@@ -102,6 +103,9 @@ const App: React.FC = () => {
     const [multiplayerOpponentCharId, setMultiplayerOpponentCharId] = useState<number | null>(null)
     const [multiplayerIsMyTurn, setMultiplayerIsMyTurn] = useState<boolean>(false)
     const [multiplayerSelectedCharacter, setMultiplayerSelectedCharacter] = useState<Character | null>(null)
+
+    // Team Battle state
+    const [selectedTeam, setSelectedTeam] = useState<Character[]>([])
 
     // leaderboard entries fetched from backend
     interface LeaderboardEntry { id?: number; name: string; character?: string; score: number; timestamp?: string }
@@ -799,6 +803,8 @@ const App: React.FC = () => {
                             setGameState('select');
                             if (mode === 'singleplayer') {
                                 pushLog('Starting single player mode...');
+                            } else if (mode === 'teambattle') {
+                                pushLog('Select your team of 4 characters...');
                             } else {
                                 pushLog('Select your character for multiplayer...');
                             }
@@ -806,10 +812,12 @@ const App: React.FC = () => {
                     />
                 )}
 
-                {gameState === 'multiplayerlobby' && multiplayerSelectedCharacter && (
+                {gameState === 'multiplayerlobby' && (multiplayerSelectedCharacter || selectedTeam.length > 0) && (
                     <MultiplayerLobby
                         playerName={playerName}
-                        selectedCharacter={multiplayerSelectedCharacter as BaseCharacter}
+                        selectedCharacter={gameMode === 'teambattle' ? undefined : (multiplayerSelectedCharacter as BaseCharacter)}
+                        selectedTeam={gameMode === 'teambattle' ? selectedTeam as BaseCharacter[] : undefined}
+                        isTeamBattle={gameMode === 'teambattle'}
                         onMatchFound={(battleId, opponentName, opponentCharacterId, isMyTurn) => {
                             setMultiplayerBattleId(battleId);
                             setMultiplayerOpponentName(opponentName);
@@ -820,6 +828,7 @@ const App: React.FC = () => {
                         }}
                         onBack={() => {
                             setMultiplayerSelectedCharacter(null);
+                            setSelectedTeam([]);
                             setGameState('select');
                         }}
                     />
@@ -827,24 +836,39 @@ const App: React.FC = () => {
 
                 {gameState === 'select' && (
                     <div className="card select-card">
-                        <CharacterSelection
-                            characters={allChars}
-                            loading={loading}
-                            error={error}
-                            onSelectCharacter={(char) => {
-                                if (gameMode === 'singleplayer') {
-                                    startWithPlayer(char);
-                                } else if (gameMode === 'multiplayer') {
-                                    setMultiplayerSelectedCharacter(char);
+                        {gameMode === 'teambattle' ? (
+                            <TeamCharacterSelection
+                                characters={allChars}
+                                loading={loading}
+                                error={error}
+                                onSelectTeam={(team) => {
+                                    setSelectedTeam(team);
                                     setGameState('multiplayerlobby');
-                                    pushLog('Entering multiplayer matchmaking...');
-                                }
-                            }}
-                            onBack={() => setGameState('modeselect')}
-                            onRefresh={load}
-                            title={gameMode === 'multiplayer' ? 'Choose your champion for multiplayer' : 'Choose your champion'}
-                            subtitle={gameMode === 'multiplayer' ? 'Select a character to enter matchmaking' : undefined}
-                        />
+                                    pushLog(`Team selected! Entering matchmaking...`);
+                                }}
+                                onBack={() => setGameState('modeselect')}
+                                onRefresh={load}
+                            />
+                        ) : (
+                            <CharacterSelection
+                                characters={allChars}
+                                loading={loading}
+                                error={error}
+                                onSelectCharacter={(char) => {
+                                    if (gameMode === 'singleplayer') {
+                                        startWithPlayer(char);
+                                    } else if (gameMode === 'multiplayer') {
+                                        setMultiplayerSelectedCharacter(char);
+                                        setGameState('multiplayerlobby');
+                                        pushLog('Entering multiplayer matchmaking...');
+                                    }
+                                }}
+                                onBack={() => setGameState('modeselect')}
+                                onRefresh={load}
+                                title={gameMode === 'multiplayer' ? 'Choose your champion for multiplayer' : 'Choose your champion'}
+                                subtitle={gameMode === 'multiplayer' ? 'Select a character to enter matchmaking' : undefined}
+                            />
+                        )}
                     </div>
                 )}
 

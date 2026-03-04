@@ -32,7 +32,8 @@ namespace RacMonsters.Server.Services.Matchmaking
                 ConnectionId = connectionId,
                 PlayerName = playerName,
                 CharacterId = characterId,
-                JoinedAt = DateTime.UtcNow
+                JoinedAt = DateTime.UtcNow,
+                IsTeamBattle = false
             };
 
             // Check if player already in queue
@@ -44,12 +45,55 @@ namespace RacMonsters.Server.Services.Matchmaking
 
             _queue.Enqueue(player);
             _playerLookup.TryAdd(connectionId, player);
-            
+
             _logger.LogInformation($"Player {playerName} joined matchmaking queue. Queue size: {_queue.Count}");
 
             await _hubContext.Clients.Client(connectionId).SendAsync(
                 "MatchmakingStatus", 
                 "Searching for opponent...", 
+                _queue.Count
+            );
+
+            await TryMatchPlayers();
+        }
+
+        public async Task AddTeamToQueue(string connectionId, string playerName, List<int> characterIds)
+        {
+            if (characterIds.Count != 4)
+            {
+                _logger.LogWarning($"Player {playerName} tried to join team queue with {characterIds.Count} characters instead of 4");
+                await _hubContext.Clients.Client(connectionId).SendAsync(
+                    "MatchmakingError",
+                    "Team battles require exactly 4 characters."
+                );
+                return;
+            }
+
+            var player = new MatchmakingPlayer
+            {
+                ConnectionId = connectionId,
+                PlayerName = playerName,
+                JoinedAt = DateTime.UtcNow,
+                IsTeamBattle = true,
+                TeamCharacterIds = characterIds,
+                CharacterId = characterIds[0] // Set first character as primary for compatibility
+            };
+
+            // Check if player already in queue
+            if (_playerLookup.ContainsKey(connectionId))
+            {
+                _logger.LogWarning($"Player {playerName} ({connectionId}) already in queue");
+                return;
+            }
+
+            _queue.Enqueue(player);
+            _playerLookup.TryAdd(connectionId, player);
+
+            _logger.LogInformation($"Player {playerName} joined team battle matchmaking queue. Queue size: {_queue.Count}");
+
+            await _hubContext.Clients.Client(connectionId).SendAsync(
+                "MatchmakingStatus", 
+                "Searching for team battle opponent...", 
                 _queue.Count
             );
 
@@ -65,24 +109,55 @@ namespace RacMonsters.Server.Services.Matchmaking
                 {
                     if (_queue.TryDequeue(out var player1) && _queue.TryDequeue(out var player2))
                     {
+                        // Check if both players are in the same mode (both team battle or both standard)
+                        if (player1.IsTeamBattle != player2.IsTeamBattle)
+                        {
+                            // Different modes - put them back in queue in reverse order
+                            _queue.Enqueue(player2);
+                            _queue.Enqueue(player1);
+                            _logger.LogInformation("Players in different modes, keeping them in queue");
+                            break; // Exit to avoid infinite loop
+                        }
+
                         // Remove from lookup
                         _playerLookup.TryRemove(player1.ConnectionId, out _);
                         _playerLookup.TryRemove(player2.ConnectionId, out _);
 
-                        _logger.LogInformation($"Match found: {player1.PlayerName} (Char {player1.CharacterId}) vs {player2.PlayerName} (Char {player2.CharacterId})");
+                        _logger.LogInformation($"Match found: {player1.PlayerName} vs {player2.PlayerName} ({(player1.IsTeamBattle ? "Team Battle" : "Standard")})");
 
-                        // Create multiplayer battle using scoped service
+                        // Create battle using scoped service
                         using var scope = _serviceProvider.CreateScope();
                         var battleService = scope.ServiceProvider.GetRequiredService<IBattleService>();
 
                         try
                         {
-                            var battleId = await battleService.CreateMultiplayerBattle(
-                                player1.ConnectionId,
-                                player1.CharacterId,
-                                player2.ConnectionId,
-                                player2.CharacterId
-                            );
+                            int battleId;
+
+                            if (player1.IsTeamBattle && player1.TeamCharacterIds != null && 
+                                player2.IsTeamBattle && player2.TeamCharacterIds != null)
+                            {
+                                // Create team battle
+                                battleId = await battleService.CreateTeamBattle(
+                                    player1.ConnectionId,
+                                    player1.TeamCharacterIds,
+                                    player2.ConnectionId,
+                                    player2.TeamCharacterIds
+                                );
+
+                                _logger.LogInformation($"Team Battle {battleId} created: {player1.PlayerName} vs {player2.PlayerName}");
+                            }
+                            else
+                            {
+                                // Create standard 1v1 battle
+                                battleId = await battleService.CreateMultiplayerBattle(
+                                    player1.ConnectionId,
+                                    player1.CharacterId,
+                                    player2.ConnectionId,
+                                    player2.CharacterId
+                                );
+
+                                _logger.LogInformation($"Standard Battle {battleId} created: {player1.PlayerName} vs {player2.PlayerName}");
+                            }
 
                             // Add both players to battle group
                             await _hubContext.Groups.AddToGroupAsync(player1.ConnectionId, $"battle-{battleId}");
@@ -110,7 +185,7 @@ namespace RacMonsters.Server.Services.Matchmaking
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Error creating multiplayer battle");
-                            
+
                             // Notify players of error
                             await _hubContext.Clients.Client(player1.ConnectionId).SendAsync(
                                 "MatchmakingError",

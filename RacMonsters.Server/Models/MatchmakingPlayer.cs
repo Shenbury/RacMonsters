@@ -6,5 +6,9 @@ namespace RacMonsters.Server.Models
         public string PlayerName { get; set; } = string.Empty;
         public int CharacterId { get; set; }
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
+
+        // Team Battle support
+        public bool IsTeamBattle { get; set; } = false;
+        public List<int>? TeamCharacterIds { get; set; }
     }
 }

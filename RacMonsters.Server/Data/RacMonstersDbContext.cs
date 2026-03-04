@@ -18,7 +18,7 @@ namespace RacMonsters.Server.Data
         public int SessionId { get; set; }
         public SessionEntity? Session { get; set; }
 
-        // normalized character references
+        // normalized character references (for Standard 1v1 mode)
         public int CharacterAId { get; set; }
         public CharacterEntity? CharacterA { get; set; }
 
@@ -38,6 +38,13 @@ namespace RacMonsters.Server.Data
         public string? CurrentTurnConnectionId { get; set; }
         public DateTime? TurnStartTime { get; set; }
         public int TurnTimeoutSeconds { get; set; } = 30;
+
+        // TEAM BATTLE MODE FIELDS (Phase 1)
+        public int BattleMode { get; set; } = 0; // 0 = Standard, 1 = TeamBattle
+        public string? Team1CharacterIds { get; set; } // JSON array of character IDs
+        public string? Team2CharacterIds { get; set; } // JSON array of character IDs
+        public int ActiveTeam1CharacterIndex { get; set; } = 0;
+        public int ActiveTeam2CharacterIndex { get; set; } = 0;
     }
 
     public class RoundEntity
@@ -48,20 +55,24 @@ namespace RacMonsters.Server.Data
         public BattleEntity? Battle { get; set; }
 
         // normalized action fields for Player A
+        public int PlayerAActionType { get; set; } = 0; // 0 = Ability, 1 = Switch
         public int PlayerACharacterId { get; set; }
         public CharacterEntity? PlayerACharacter { get; set; }
         public int PlayerAAbilityId { get; set; }
         public AbilityEntity? PlayerAAbility { get; set; }
+        public int? PlayerASwitchToIndex { get; set; } // For switch actions
         public bool? PlayerAHit { get; set; }
         public string? PlayerAResultMessage { get; set; }
         public int? PlayerADamage { get; set; }
         public int? PlayerAHealAmount { get; set; }
 
         // normalized action fields for Player B
+        public int PlayerBActionType { get; set; } = 0; // 0 = Ability, 1 = Switch
         public int PlayerBCharacterId { get; set; }
         public CharacterEntity? PlayerBCharacter { get; set; }
         public int PlayerBAbilityId { get; set; }
         public AbilityEntity? PlayerBAbility { get; set; }
+        public int? PlayerBSwitchToIndex { get; set; } // For switch actions
         public bool? PlayerBHit { get; set; }
         public string? PlayerBResultMessage { get; set; }
         public int? PlayerBDamage { get; set; }

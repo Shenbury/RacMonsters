@@ -2,6 +2,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
 
+var signalR = builder.AddAzureSignalR("signalr");
+
 var sql = builder.AddSqlServer("rmserver");
 var sqldb = sql.AddDatabase("rmdb");
 
@@ -10,7 +12,9 @@ var server = builder.AddProject<Projects.RacMonsters_Server>("server")
     .WithExternalHttpEndpoints()
     .WithReference(cache)
     .WaitFor(sqldb)
-    .WithReference(sqldb); ;
+    .WithReference(sqldb)
+    .WithReference(signalR)
+    .WaitFor(signalR);
 
 var webfrontend = builder.AddViteApp("webfrontend", "../frontend")
     .WithReference(server)

@@ -64,6 +64,70 @@
     margin-bottom: 20px;
 }
 
+/* Team Battle Display */
+.selected-team-display {
+    margin: 40px auto;
+    max-width: 900px;
+}
+
+.selected-team-display h2 {
+    font-size: 1.8rem;
+    color: #ff9f1c;
+    margin-bottom: 20px;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.team-member-card {
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border: 3px solid #ff9f1c;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 0 20px rgba(255, 159, 28, 0.3);
+    position: relative;
+}
+
+.member-number {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #ff9f1c;
+    color: #000;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.team-member-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.team-member-card h4 {
+    color: #fff;
+    margin: 10px 0;
+    font-size: 1rem;
+}
+
+.member-stats-mini {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
 .champion-card {
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     border: 3px solid #4CAF50;

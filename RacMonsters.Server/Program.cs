@@ -33,7 +33,8 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 // Add SignalR for multiplayer support (Phase 1)
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+                .AddNamedAzureSignalR("signalr");
 
 // Register character loader service
 // repositories

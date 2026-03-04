@@ -24,8 +24,17 @@ namespace RacMonsters.Server.Hubs
         {
             var connectionId = Context.ConnectionId;
             _logger.LogInformation($"Player {playerName} (Connection: {connectionId}) joining matchmaking with character {characterId}");
-            
+
             await _matchmaking.AddPlayerToQueue(connectionId, playerName, characterId);
+        }
+
+        // Team Battle - Phase 4
+        public async Task JoinTeamMatchmaking(string playerName, List<int> characterIds)
+        {
+            var connectionId = Context.ConnectionId;
+            _logger.LogInformation($"Player {playerName} (Connection: {connectionId}) joining team matchmaking with characters {string.Join(",", characterIds)}");
+
+            await _matchmaking.AddTeamToQueue(connectionId, playerName, characterIds);
         }
 
         public async Task SelectAbility(int battleId, int abilityId)
@@ -118,6 +127,106 @@ namespace RacMonsters.Server.Hubs
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error processing ability selection for battle {battleId}");
+                await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+        }
+
+        // Team Battle - Switch Character (Phase 4)
+        public async Task SwitchCharacter(int battleId, int newCharacterIndex)
+        {
+            var connectionId = Context.ConnectionId;
+            _logger.LogInformation($"Player {connectionId} switching to character index {newCharacterIndex} in battle {battleId}");
+
+            try
+            {
+                var result = await _battleService.ProcessSwitchCharacter(battleId, connectionId, newCharacterIndex);
+
+                // Get the battle to determine player positions
+                var battle = await _battleService.GetBattle(battleId);
+                if (battle == null)
+                {
+                    await Clients.Caller.SendAsync("Error", "Battle not found");
+                    return;
+                }
+
+                // Check if both players are ready (round processed)
+                if (result.LastRound != null || result.IsGameOver)
+                {
+                    // Round was processed - send result to both players
+
+                    // Determine if this is player 1 or player 2
+                    var isPlayer1 = connectionId == battle.Player1ConnectionId;
+
+                    // Player 1 perspective
+                    var player1Result = new 
+                    {
+                        battleId = result.BattleId,
+                        playerCharacter = battle.GetActiveTeam1Character(),
+                        opponentCharacter = battle.GetActiveTeam2Character(),
+                        playerTeam = battle.Team1Characters,
+                        opponentTeam = battle.Team2Characters,
+                        lastRound = result.LastRound,
+                        isGameOver = result.IsGameOver,
+                        winner = result.Winner,
+                        message = result.Message,
+                        triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                        triggeringPlayerName = result.TriggeringPlayerName
+                    };
+
+                    // Player 2 perspective
+                    var player2Result = new 
+                    {
+                        battleId = result.BattleId,
+                        playerCharacter = battle.GetActiveTeam2Character(),
+                        opponentCharacter = battle.GetActiveTeam1Character(),
+                        playerTeam = battle.Team2Characters,
+                        opponentTeam = battle.Team1Characters,
+                        lastRound = result.LastRound,
+                        isGameOver = result.IsGameOver,
+                        winner = result.Winner,
+                        message = result.Message,
+                        triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                        triggeringPlayerName = result.TriggeringPlayerName
+                    };
+
+                    // Send to Player 1
+                    await Clients.Client(battle.Player1ConnectionId!).SendAsync("TurnProcessed", player1Result);
+
+                    // Send to Player 2
+                    await Clients.Client(battle.Player2ConnectionId!).SendAsync("TurnProcessed", player2Result);
+                }
+                else
+                {
+                    // Only one player has acted - acknowledge and notify opponent
+                    var isPlayer1 = connectionId == battle.Player1ConnectionId;
+                    var activeChar = isPlayer1 ? battle.GetActiveTeam1Character() : battle.GetActiveTeam2Character();
+                    var opponentChar = isPlayer1 ? battle.GetActiveTeam2Character() : battle.GetActiveTeam1Character();
+
+                    // Send acknowledgement to the player who just switched
+                    await Clients.Caller.SendAsync("CharacterSwitched", new 
+                    {
+                        battleId = result.BattleId,
+                        playerCharacter = activeChar,
+                        opponentCharacter = opponentChar,
+                        playerTeam = isPlayer1 ? battle.Team1Characters : battle.Team2Characters,
+                        opponentTeam = isPlayer1 ? battle.Team2Characters : battle.Team1Characters,
+                        message = result.Message,
+                        newCharacterName = activeChar.Name
+                    });
+
+                    // Notify the opponent that the other player switched
+                    var opponentConnectionId = isPlayer1 ? battle.Player2ConnectionId : battle.Player1ConnectionId;
+                    await Clients.Client(opponentConnectionId!).SendAsync("OpponentSwitched", new
+                    {
+                        battleId = result.BattleId,
+                        message = $"Opponent switched characters!",
+                        opponentCharacter = activeChar
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error processing character switch for battle {battleId}");
                 await Clients.Caller.SendAsync("Error", ex.Message);
             }
         }

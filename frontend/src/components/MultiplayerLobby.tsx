@@ -5,12 +5,21 @@ import './MultiplayerLobby.css';
 
 interface Props {
     playerName: string;
-    selectedCharacter: Character;
+    selectedCharacter?: Character;
+    selectedTeam?: Character[];
+    isTeamBattle?: boolean;
     onMatchFound: (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean) => void;
     onBack: () => void;
 }
 
-export function MultiplayerLobby({ playerName, selectedCharacter, onMatchFound, onBack }: Props) {
+export function MultiplayerLobby({ 
+    playerName, 
+    selectedCharacter, 
+    selectedTeam,
+    isTeamBattle = false,
+    onMatchFound, 
+    onBack 
+}: Props) {
     const [isSearching, setIsSearching] = useState(false);
     const [queueSize, setQueueSize] = useState(0);
     const [status, setStatus] = useState("Ready to search");
@@ -61,10 +70,21 @@ export function MultiplayerLobby({ playerName, selectedCharacter, onMatchFound, 
         setStatus("Joining matchmaking...");
 
         try {
-            const characterId = typeof selectedCharacter.id === 'number' 
-                ? selectedCharacter.id 
-                : parseInt(String(selectedCharacter.id), 10);
-            await signalRService.joinMatchmaking(playerName, characterId);
+            if (isTeamBattle && selectedTeam) {
+                // Team battle matchmaking
+                const characterIds = selectedTeam.map(char => 
+                    typeof char.id === 'number' ? char.id : parseInt(String(char.id), 10)
+                );
+                await signalRService.joinTeamMatchmaking(playerName, characterIds);
+            } else if (selectedCharacter) {
+                // Standard 1v1 matchmaking
+                const characterId = typeof selectedCharacter.id === 'number' 
+                    ? selectedCharacter.id 
+                    : parseInt(String(selectedCharacter.id), 10);
+                await signalRService.joinMatchmaking(playerName, characterId);
+            } else {
+                throw new Error('No character or team selected');
+            }
         } catch (err) {
             console.error("Error joining queue:", err);
             setError("Failed to join matchmaking. Please try again.");
@@ -80,7 +100,7 @@ export function MultiplayerLobby({ playerName, selectedCharacter, onMatchFound, 
     if (isConnecting) {
         return (
             <div className="multiplayer-lobby">
-                <h1>Multiplayer Mode</h1>
+                <h1>{isTeamBattle ? 'Team Battle Mode' : 'Multiplayer Mode'}</h1>
                 <div className="connecting">
                     <div className="spinner"></div>
                     <p>Connecting to multiplayer server...</p>
@@ -91,7 +111,7 @@ export function MultiplayerLobby({ playerName, selectedCharacter, onMatchFound, 
 
     return (
         <div className="multiplayer-lobby">
-            <h1>Multiplayer Mode</h1>
+            <h1>{isTeamBattle ? 'Team Battle Mode' : 'Multiplayer Mode'}</h1>
             <p className="player-name">Playing as: <strong>{playerName}</strong></p>
 
             {error && (
@@ -101,31 +121,52 @@ export function MultiplayerLobby({ playerName, selectedCharacter, onMatchFound, 
                 </div>
             )}
 
-            <div className="selected-character-display">
-                <h2>Your Champion</h2>
-                <div className="champion-card">
-                    <img src={selectedCharacter.imageUrl} alt={selectedCharacter.name} />
-                    <h3>{selectedCharacter.name}</h3>
-                    <div className="champion-stats">
-                        <div className="stat-row">
-                            <span className="stat-label">HP:</span>
-                            <span className="stat-value">{selectedCharacter.maxHealth}</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">ATK:</span>
-                            <span className="stat-value">{selectedCharacter.attack}</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">DEF:</span>
-                            <span className="stat-value">{selectedCharacter.defense}</span>
-                        </div>
-                        <div className="stat-row">
-                            <span className="stat-label">TECH:</span>
-                            <span className="stat-value">{selectedCharacter.techAttack}</span>
+            {isTeamBattle && selectedTeam ? (
+                /* Team Battle Display */
+                <div className="selected-team-display">
+                    <h2>Your Team</h2>
+                    <div className="team-grid">
+                        {selectedTeam.map((character, idx) => (
+                            <div key={idx} className="team-member-card">
+                                <div className="member-number">{idx + 1}</div>
+                                <img src={character.imageUrl} alt={character.name} />
+                                <h4>{character.name}</h4>
+                                <div className="member-stats-mini">
+                                    <span>HP: {character.maxHealth}</span>
+                                    <span>ATK: {character.attack}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : selectedCharacter ? (
+                /* Standard 1v1 Display */
+                <div className="selected-character-display">
+                    <h2>Your Champion</h2>
+                    <div className="champion-card">
+                        <img src={selectedCharacter.imageUrl} alt={selectedCharacter.name} />
+                        <h3>{selectedCharacter.name}</h3>
+                        <div className="champion-stats">
+                            <div className="stat-row">
+                                <span className="stat-label">HP:</span>
+                                <span className="stat-value">{selectedCharacter.maxHealth}</span>
+                            </div>
+                            <div className="stat-row">
+                                <span className="stat-label">ATK:</span>
+                                <span className="stat-value">{selectedCharacter.attack}</span>
+                            </div>
+                            <div className="stat-row">
+                                <span className="stat-label">DEF:</span>
+                                <span className="stat-value">{selectedCharacter.defense}</span>
+                            </div>
+                            <div className="stat-row">
+                                <span className="stat-label">TECH:</span>
+                                <span className="stat-value">{selectedCharacter.techAttack}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            ) : null}
 
             {!isSearching ? (
                 <div className="lobby-actions">
@@ -140,7 +181,7 @@ export function MultiplayerLobby({ playerName, selectedCharacter, onMatchFound, 
                         onClick={onBack}
                         className="btn-secondary"
                     >
-                        Change Character
+                        {isTeamBattle ? 'Change Team' : 'Change Character'}
                     </button>
                 </div>
             ) : (
