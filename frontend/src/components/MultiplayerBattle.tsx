@@ -70,6 +70,7 @@ export function MultiplayerBattle({
 
         signalRService.onOpponentReady((data: { battleId: number; message: string; opponentName: string }) => {
             console.log('Opponent ready:', data);
+            console.log(initialIsMyTurn);
             setMessage(data.message);
             setBattleLog(prev => [data.message, ...prev].slice(0, 10));
         });
