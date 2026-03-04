@@ -56,31 +56,30 @@ class SignalRService {
                 .configureLogging(signalR.LogLevel.Information)
                 .build();
 
-        this.connection.onreconnecting((error) => {
-            console.warn("SignalR reconnecting...", error);
-            this.reconnectAttempts++;
-        });
+            this.connection.onreconnecting((error) => {
+                console.warn("SignalR reconnecting...", error);
+                this.reconnectAttempts++;
+            });
 
-        this.connection.onreconnected((connectionId) => {
-            console.log("SignalR reconnected:", connectionId);
-            this.reconnectAttempts = 0;
-        });
+            this.connection.onreconnected((connectionId) => {
+                console.log("SignalR reconnected:", connectionId);
+                this.reconnectAttempts = 0;
+            });
 
-        this.connection.onclose((error) => {
-            console.error("SignalR connection closed:", error);
-            this.connection = null; // Clear the connection reference
+            this.connection.onclose((error) => {
+                console.error("SignalR connection closed:", error);
+                this.connection = null; // Clear the connection reference
 
-            // Only attempt auto-reconnect if under the limit and not a rate limit error
-            const is429Error = error?.message?.includes('429') || error?.message?.includes('limit');
-            if (!is429Error && this.reconnectAttempts < this.maxReconnectAttempts) {
-                console.log(`Attempting to reconnect in 5 seconds (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-                setTimeout(() => this.connect(), 5000);
-            } else if (is429Error) {
-                console.error("Rate limit reached. Please close other tabs and wait a few minutes before trying again.");
-            }
-        });
+                // Only attempt auto-reconnect if under the limit and not a rate limit error
+                const is429Error = error?.message?.includes('429') || error?.message?.includes('limit');
+                if (!is429Error && this.reconnectAttempts < this.maxReconnectAttempts) {
+                    console.log(`Attempting to reconnect in 5 seconds (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+                    setTimeout(() => this.connect(), 5000);
+                } else if (is429Error) {
+                    console.error("Rate limit reached. Please close other tabs and wait a few minutes before trying again.");
+                }
+            });
 
-        try {
             await this.connection.start();
             console.log("SignalR Connected successfully");
             this.isConnecting = false;
