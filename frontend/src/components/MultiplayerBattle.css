@@ -245,6 +245,42 @@
     cursor: not-allowed;
 }
 
+/* Enemy Abilities - Greyed Out */
+.abilities-panel.opponent-abilities {
+    margin-top: 40px;
+    opacity: 0.6;
+}
+
+.abilities-panel.opponent-abilities h3 {
+    color: #aaa;
+}
+
+.ability-button.enemy-ability {
+    background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+    border: 2px solid #333;
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.ability-button.enemy-ability .ability-name {
+    color: #666;
+}
+
+.ability-button.enemy-ability .ability-type-badge {
+    opacity: 0.4;
+}
+
+.ability-button.enemy-ability .ability-description {
+    color: #777;
+    font-style: italic;
+}
+
+/* Hide stats for enemy abilities */
+.ability-button.enemy-ability .ability-stats {
+    display: none;
+}
+
 .ability-name {
     font-size: 1.2rem;
     font-weight: bold;

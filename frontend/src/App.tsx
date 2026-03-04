@@ -5,7 +5,7 @@ import { GameModeSelection } from './components/GameModeSelection'
 import { MultiplayerLobby } from './components/MultiplayerLobby'
 import { CharacterSelection } from './components/CharacterSelection'
 import { MultiplayerBattle } from './components/MultiplayerBattle'
-import type { Character as BaseCharacter } from './types'
+import type { Character as BaseCharacter, StatusEffect, StatusEffectType } from './types'
 
 // Extended types to handle both camelCase and PascalCase from API
 // Using Record<string, any> to allow additional properties from the backend
@@ -40,6 +40,7 @@ interface Character extends Record<string, any> {
     techAttack?: number
     techDefense?: number
     abilities?: Ability[]
+    activeStatusEffects?: StatusEffect[]
 }
 
 // Music files located in public/music. Update this list if you add/remove songs.
@@ -624,6 +625,61 @@ const App: React.FC = () => {
     const enemyHPVal = enemyHP ?? enemyMax
     const enemyHPPercent = Math.max(0, Math.min(100, Math.round((enemyHPVal / enemyMax) * 100)))
 
+    const getStatusEffectIcon = (type: StatusEffectType): string => {
+        switch (type) {
+            case 0: return '🔥'; // Burn
+            case 1: return '☠️'; // Poison
+            case 2: return '🩸'; // Bleed
+            case 3: return '⚔️↑'; // AttackUp
+            case 4: return '⚔️↓'; // AttackDown
+            case 5: return '🛡️↑'; // DefenseUp
+            case 6: return '🛡️↓'; // DefenseDown
+            case 7: return '⚡↑'; // TechAttackUp
+            case 8: return '⚡↓'; // TechAttackDown
+            case 9: return '🔰↑'; // TechDefenseUp
+            case 10: return '🔰↓'; // TechDefenseDown
+            case 11: return '🎯↑'; // AccuracyUp
+            case 12: return '🎯↓'; // AccuracyDown
+            case 13: return '💨↑'; // EvasionUp
+            case 14: return '💨↓'; // EvasionDown
+            case 15: return '⚡'; // Charging
+            case 16: return '🚫'; // HealBlock
+            case 17: return '💫'; // Stunned
+            case 18: return '✨'; // Protected
+            default: return '❓';
+        }
+    };
+
+    const getStatusEffectTooltip = (effect: StatusEffect): string => {
+        const duration = effect.duration;
+        const turnText = duration === 1 ? 'turn' : 'turns';
+
+        switch (effect.type) {
+            case 0: return `Burn: ${effect.power} damage per turn for ${duration} ${turnText}`;
+            case 1: return `Poison: ${effect.power} damage per turn for ${duration} ${turnText}`;
+            case 2: return `Bleed: ${effect.power} damage per turn for ${duration} ${turnText}`;
+            case 3: return `Attack increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 4: return `Attack lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 5: return `Defense increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 6: return `Defense lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 7: return `Tech Attack increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 8: return `Tech Attack lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 9: return `Tech Defense increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 10: return `Tech Defense lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 11: return `Accuracy increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 12: return `Accuracy lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 13: return `Evasion increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 14: return `Evasion lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 15: return effect.sourceAbilityName 
+                ? `Charging ${effect.sourceAbilityName} for ${duration} ${turnText}` 
+                : `Charging for ${duration} ${turnText}`;
+            case 16: return `Heal Block: Cannot heal for ${duration} ${turnText}`;
+            case 17: return `Stunned: Cannot act for ${duration} ${turnText}`;
+            case 18: return `Protected: Immune to damage for ${duration} ${turnText}`;
+            default: return `${effect.name} for ${duration} ${turnText}`;
+        }
+    };
+
     return (
         <div className={`app-container battle-theme ${darkMode ? 'dark' : ''}`}>
             <header className="app-header">
@@ -643,6 +699,11 @@ const App: React.FC = () => {
                     </label>
                     {gameState !== 'start' && (
                         <button className="btn" onClick={() => setGameState('leaderboard')}>Leaderboard</button>
+                    )}
+                    {gameState === 'battle' && (
+                        <button className="btn reset" onClick={resetAll} aria-label="Back to selection">
+                            Back to Selection
+                        </button>
                     )}
                 </div>
             </header>
@@ -821,6 +882,17 @@ const App: React.FC = () => {
                                         <div>TATK: {player?.techAttack ?? '--'}</div>
                                         <div>TDEF: {player?.techDefense ?? '--'}</div>
                                     </div>
+                                    {/* Player Status Effects */}
+                                    {player?.activeStatusEffects && player.activeStatusEffects.length > 0 && (
+                                        <div className="status-effects">
+                                            {player.activeStatusEffects.map((effect, idx) => (
+                                                <div key={idx} className="status-effect" title={getStatusEffectTooltip(effect)}>
+                                                    <span className="status-icon">{getStatusEffectIcon(effect.type)}</span>
+                                                    <span className="status-duration">{effect.duration}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -857,9 +929,48 @@ const App: React.FC = () => {
                                         <div>TATK: {enemy?.techAttack ?? '--'}</div>
                                         <div>TDEF: {enemy?.techDefense ?? '--'}</div>
                                     </div>
+                                    {/* Enemy Status Effects */}
+                                    {enemy?.activeStatusEffects && enemy.activeStatusEffects.length > 0 && (
+                                        <div className="status-effects">
+                                            {enemy.activeStatusEffects.map((effect, idx) => (
+                                                <div key={idx} className="status-effect" title={getStatusEffectTooltip(effect)}>
+                                                    <span className="status-icon">{getStatusEffectIcon(effect.type)}</span>
+                                                    <span className="status-duration">{effect.duration}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
+
+                        {/* Enemy Abilities - Fixed Sidebar on Right */}
+                        {enemy?.abilities && enemy.abilities.length > 0 && (
+                            <div className="enemy-abilities-sidebar-fixed">
+                                <h4>{enemy.name}'s Abilities</h4>
+                                <div className="enemy-abilities-list">
+                                    {enemy.abilities.map((a: Ability, i: number) => {
+                                        const name = a.name ?? a.Name ?? 'Ability';
+                                        const description = a.description ?? a.Description ?? '';
+                                        const isTech = a.isTech ?? a.IsTech;
+                                        const isHeal = a.isHeal ?? a.IsHeal;
+                                        return (
+                                            <div key={i} className="enemy-ability-item">
+                                                <div className="enemy-ability-header">
+                                                    <span className="enemy-ability-name">{name}</span>
+                                                    <span className="enemy-ability-type">
+                                                        {isHeal ? '🔵' : isTech ? '⚡' : '👊'}
+                                                    </span>
+                                                </div>
+                                                {description && (
+                                                    <div className="enemy-ability-description">{description}</div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="controls">
                             <div className="actions ability-grid">
@@ -886,11 +997,6 @@ const App: React.FC = () => {
                                         </div>
                                     )
                                 })}
-                            </div>
-                            <div className="controls-right">
-                                <button className="btn reset" onClick={resetAll} aria-label="Restart game">
-                                    Back to Selection
-                                </button>
                             </div>
                         </div>
 

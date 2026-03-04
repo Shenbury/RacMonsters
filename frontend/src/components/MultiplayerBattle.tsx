@@ -149,6 +149,36 @@ export function MultiplayerBattle({
         }
     };
 
+    const getStatusEffectTooltip = (effect: StatusEffect): string => {
+        const duration = effect.duration;
+        const turnText = duration === 1 ? 'turn' : 'turns';
+
+        switch (effect.type) {
+            case 0: return `Burn: ${effect.power} damage per turn for ${duration} ${turnText}`;
+            case 1: return `Poison: ${effect.power} damage per turn for ${duration} ${turnText}`;
+            case 2: return `Bleed: ${effect.power} damage per turn for ${duration} ${turnText}`;
+            case 3: return `Attack increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 4: return `Attack lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 5: return `Defense increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 6: return `Defense lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 7: return `Tech Attack increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 8: return `Tech Attack lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 9: return `Tech Defense increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 10: return `Tech Defense lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 11: return `Accuracy increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 12: return `Accuracy lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 13: return `Evasion increased by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 14: return `Evasion lowered by ${Math.round(effect.modifier * 100)}% for ${duration} ${turnText}`;
+            case 15: return effect.sourceAbilityName 
+                ? `Charging ${effect.sourceAbilityName} for ${duration} ${turnText}` 
+                : `Charging for ${duration} ${turnText}`;
+            case 16: return `Heal Block: Cannot heal for ${duration} ${turnText}`;
+            case 17: return `Stunned: Cannot act for ${duration} ${turnText}`;
+            case 18: return `Protected: Immune to damage for ${duration} ${turnText}`;
+            default: return `${effect.name} for ${duration} ${turnText}`;
+        }
+    };
+
     if (!opponentChar) {
         return (
             <div className="multiplayer-battle loading">
@@ -210,7 +240,7 @@ export function MultiplayerBattle({
                     {playerChar.activeStatusEffects && playerChar.activeStatusEffects.length > 0 && (
                         <div className="status-effects">
                             {playerChar.activeStatusEffects.map((effect, idx) => (
-                                <div key={idx} className="status-effect" title={`${effect.name} (${effect.duration} turns)`}>
+                                <div key={idx} className="status-effect" title={getStatusEffectTooltip(effect)}>
                                     <span className="status-icon">{getStatusEffectIcon(effect.type)}</span>
                                     <span className="status-duration">{effect.duration}</span>
                                 </div>
@@ -258,7 +288,7 @@ export function MultiplayerBattle({
                     {opponentChar.activeStatusEffects && opponentChar.activeStatusEffects.length > 0 && (
                         <div className="status-effects">
                             {opponentChar.activeStatusEffects.map((effect, idx) => (
-                                <div key={idx} className="status-effect" title={`${effect.name} (${effect.duration} turns)`}>
+                                <div key={idx} className="status-effect" title={getStatusEffectTooltip(effect)}>
                                     <span className="status-icon">{getStatusEffectIcon(effect.type)}</span>
                                     <span className="status-duration">{effect.duration}</span>
                                 </div>
@@ -326,6 +356,31 @@ export function MultiplayerBattle({
                         >
                             Forfeit Match
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Enemy Abilities - Greyed Out */}
+            {!battleState?.isGameOver && opponentChar.abilities && opponentChar.abilities.length > 0 && (
+                <div className="abilities-panel opponent-abilities">
+                    <h3>{opponentName}'s Abilities</h3>
+                    <div className="abilities-grid">
+                        {opponentChar.abilities.map(ability => (
+                            <div
+                                key={ability.id}
+                                className="ability-button enemy-ability disabled"
+                            >
+                                <div className="ability-header">
+                                    <div className="ability-name">{ability.name}</div>
+                                    <div className="ability-type-badge">
+                                        {ability.isHeal ? '🔵' : ability.isTech ? '⚡' : '👊'}
+                                    </div>
+                                </div>
+                                {ability.description && (
+                                    <div className="ability-description">{ability.description}</div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
