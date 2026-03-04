@@ -31,9 +31,6 @@ export function TeamMultiplayerBattle({
     const [battleLog, setBattleLog] = useState<string[]>(['Team battle started!']);
     const [showSwitchMenu, setShowSwitchMenu] = useState(false);
 
-    const activeChar = playerTeam[activeCharIndex];
-    const opponentActiveChar = opponentTeam[opponentActiveIndex];
-
     useEffect(() => {
         // If opponent team was not provided, initialize as placeholder
         // In a real scenario, this should come from the server via TurnProcessed
@@ -61,12 +58,18 @@ export function TeamMultiplayerBattle({
                 console.log('Updating player team:', result.playerTeam);
                 setPlayerTeam(result.playerTeam);
 
-                // Find the active character index (the one with current health > 0 and was active)
-                const activeIndex = result.playerTeam.findIndex((char: Character, idx: number) => 
-                    idx === activeCharIndex || (char.currentHealth > 0 && activeCharIndex < result.playerTeam.length)
-                );
-                if (activeIndex >= 0) {
-                    setActiveCharIndex(activeIndex);
+                // Update active character index from server
+                if (result.playerActiveIndex !== undefined) {
+                    setActiveCharIndex(result.playerActiveIndex);
+                } else {
+                    // Fallback: Find the first alive character if current is defeated
+                    const currentChar = result.playerTeam[activeCharIndex];
+                    if (!currentChar || currentChar.currentHealth <= 0) {
+                        const aliveIndex = result.playerTeam.findIndex((char: Character) => char.currentHealth > 0);
+                        if (aliveIndex >= 0) {
+                            setActiveCharIndex(aliveIndex);
+                        }
+                    }
                 }
             }
 
@@ -74,12 +77,18 @@ export function TeamMultiplayerBattle({
                 console.log('Updating opponent team:', result.opponentTeam);
                 setOpponentTeam(result.opponentTeam);
 
-                // Find the active opponent character
-                const activeIndex = result.opponentTeam.findIndex((char: Character, idx: number) => 
-                    idx === opponentActiveIndex || (char.currentHealth > 0 && opponentActiveIndex < result.opponentTeam.length)
-                );
-                if (activeIndex >= 0) {
-                    setOpponentActiveIndex(activeIndex);
+                // Update opponent active index from server
+                if (result.opponentActiveIndex !== undefined) {
+                    setOpponentActiveIndex(result.opponentActiveIndex);
+                } else {
+                    // Fallback: Find the first alive character if current is defeated
+                    const currentChar = result.opponentTeam[opponentActiveIndex];
+                    if (!currentChar || currentChar.currentHealth <= 0) {
+                        const aliveIndex = result.opponentTeam.findIndex((char: Character) => char.currentHealth > 0);
+                        if (aliveIndex >= 0) {
+                            setOpponentActiveIndex(aliveIndex);
+                        }
+                    }
                 }
             }
 
@@ -109,6 +118,12 @@ export function TeamMultiplayerBattle({
             console.log('Character switched:', data);
             setMessage('Character switched successfully!');
             setBattleLog(prev => [`You switched to ${data.newCharacterName}!`, ...prev].slice(0, 10));
+
+            // Update the active character index from server confirmation
+            if (data.newCharacterIndex !== undefined) {
+                setActiveCharIndex(data.newCharacterIndex);
+            }
+
             setIsProcessing(false);
             setIsWaitingForOpponent(false); // Reset waiting state
             setShowSwitchMenu(false);
@@ -178,7 +193,7 @@ export function TeamMultiplayerBattle({
 
         try {
             await signalRService.switchCharacter(battleId, newIndex);
-            setActiveCharIndex(newIndex);
+            // Don't update activeCharIndex here - wait for server confirmation via onTurnProcessed or onCharacterSwitched
         } catch (error) {
             console.error('Error switching character:', error);
             setMessage('Failed to switch character. Please try again.');
@@ -196,6 +211,20 @@ export function TeamMultiplayerBattle({
         if (percentage > 30) return '#FFC107';
         return '#f44336';
     };
+
+    // Compute active characters from current state
+    const activeChar = playerTeam[activeCharIndex];
+    const opponentActiveChar = opponentTeam[opponentActiveIndex];
+
+    // Safety check
+    if (!activeChar) {
+        return (
+            <div className="team-multiplayer-battle loading">
+                <div className="spinner"></div>
+                <p>Loading battle...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="team-multiplayer-battle">
