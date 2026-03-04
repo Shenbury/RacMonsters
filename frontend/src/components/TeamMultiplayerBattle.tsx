@@ -95,6 +95,12 @@ export function TeamMultiplayerBattle({
                 const won = !allPlayerDefeated;
                 const gameOverMsg = won ? 'Victory! Your team won!' : 'Defeat! All your characters were defeated.';
                 setBattleLog(prev => [gameOverMsg, ...prev].slice(0, 10));
+
+                // Clean up battle connection before ending
+                signalRService.leaveBattle(battleId).catch(err => {
+                    console.error('Error leaving battle:', err);
+                });
+
                 setTimeout(() => onBattleEnd(won), 3000);
             }
         });

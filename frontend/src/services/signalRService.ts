@@ -155,6 +155,21 @@ class SignalRService {
         }
     }
 
+    async leaveBattle(battleId: number): Promise<void> {
+        if (!this.connection) {
+            console.warn("Not connected to SignalR, cannot leave battle");
+            return;
+        }
+
+        try {
+            await this.connection.invoke("LeaveBattle", battleId);
+            console.log(`Left battle ${battleId}`);
+        } catch (error) {
+            console.error("Error leaving battle:", error);
+            // Don't throw - this is cleanup, we want it to continue even if it fails
+        }
+    }
+
     onCharacterSwitched(callback: (data: any) => void): void {
         this.connection?.on("CharacterSwitched", (data: any) => {
             console.log("Character switched:", data);

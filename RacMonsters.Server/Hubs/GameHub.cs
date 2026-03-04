@@ -231,6 +231,25 @@ namespace RacMonsters.Server.Hubs
             }
         }
 
+        public async Task LeaveBattle(int battleId)
+        {
+            var connectionId = Context.ConnectionId;
+            _logger.LogInformation($"Player {connectionId} leaving battle {battleId}");
+
+            try
+            {
+                // Remove player from battle group
+                await Groups.RemoveFromGroupAsync(connectionId, $"battle-{battleId}");
+
+                // Log for debugging
+                _logger.LogInformation($"Player {connectionId} removed from battle group {battleId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error removing player from battle {battleId}");
+            }
+        }
+
         public override async Task OnConnectedAsync()
         {
             _logger.LogInformation($"Client connected: {Context.ConnectionId}");
@@ -240,14 +259,14 @@ namespace RacMonsters.Server.Hubs
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
-            
+
             await _matchmaking.RemovePlayer(Context.ConnectionId);
-            
+
             if (exception != null)
             {
                 _logger.LogError(exception, "Client disconnected with error");
             }
-            
+
             await base.OnDisconnectedAsync(exception);
         }
     }

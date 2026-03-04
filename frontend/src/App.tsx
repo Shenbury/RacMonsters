@@ -7,6 +7,7 @@ import { CharacterSelection } from './components/CharacterSelection'
 import { TeamCharacterSelection } from './components/TeamCharacterSelection'
 import { MultiplayerBattle } from './components/MultiplayerBattle'
 import { TeamMultiplayerBattle } from './components/TeamMultiplayerBattle'
+import { signalRService } from './services/signalRService'
 import type { Character as BaseCharacter, StatusEffect, StatusEffectType } from './types'
 
 // Extended types to handle both camelCase and PascalCase from API
@@ -1059,6 +1060,14 @@ const App: React.FC = () => {
                             } else {
                                 pushLog(`Defeat! ${multiplayerOpponentName}'s team was victorious.`);
                             }
+
+                            // Clean up
+                            if (multiplayerBattleId) {
+                                signalRService.leaveBattle(multiplayerBattleId).catch(err => {
+                                    console.error('Error leaving battle:', err);
+                                });
+                            }
+
                             setMultiplayerBattleId(null);
                             setMultiplayerOpponentName('');
                             setMultiplayerOpponentCharId(null);
@@ -1067,6 +1076,13 @@ const App: React.FC = () => {
                             setGameState('modeselect');
                         }}
                         onBackToLobby={() => {
+                            // Clean up battle connection
+                            if (multiplayerBattleId) {
+                                signalRService.leaveBattle(multiplayerBattleId).catch(err => {
+                                    console.error('Error leaving battle:', err);
+                                });
+                            }
+
                             setMultiplayerBattleId(null);
                             setMultiplayerOpponentName('');
                             setMultiplayerOpponentCharId(null);
@@ -1090,6 +1106,14 @@ const App: React.FC = () => {
                             } else {
                                 pushLog(`Defeat! ${multiplayerOpponentName} was victorious.`);
                             }
+
+                            // Clean up battle connection
+                            if (multiplayerBattleId) {
+                                signalRService.leaveBattle(multiplayerBattleId).catch(err => {
+                                    console.error('Error leaving battle:', err);
+                                });
+                            }
+
                             setMultiplayerBattleId(null);
                             setMultiplayerOpponentName('');
                             setMultiplayerOpponentCharId(null);
@@ -1097,6 +1121,13 @@ const App: React.FC = () => {
                             setGameState('modeselect');
                         }}
                         onBackToLobby={() => {
+                            // Clean up battle connection
+                            if (multiplayerBattleId) {
+                                signalRService.leaveBattle(multiplayerBattleId).catch(err => {
+                                    console.error('Error leaving battle:', err);
+                                });
+                            }
+
                             setMultiplayerBattleId(null);
                             setMultiplayerOpponentName('');
                             setMultiplayerOpponentCharId(null);
