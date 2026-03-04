@@ -33,8 +33,16 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 // Add SignalR for multiplayer support (Phase 1)
-builder.Services.AddSignalR()
-                .AddNamedAzureSignalR("signalr");
+builder.Services.AddSignalR(options =>
+{
+    // Configure SignalR options if needed
+})
+.AddNamedAzureSignalR("signalr")
+.AddJsonProtocol(options =>
+{
+    // Configure JSON serialization for SignalR to use camelCase
+    options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
 
 // Register character loader service
 // repositories

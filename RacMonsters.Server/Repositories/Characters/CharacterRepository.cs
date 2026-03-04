@@ -55,7 +55,7 @@ namespace RacMonsters.Server.Repositories.Characters
             {
                 Id = ent.Id,
                 Name = ent.Name,
-                ImageUrl = ent.ImageUrl,
+                ImageUrl = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? ent.ImageUrl.Split('/').Last() : ent.ImageUrl,
                 MaxHealth = ent.MaxHealth,
                 CurrentHealth = ent.CurrentHealth,
                 Attack = ent.Attack,

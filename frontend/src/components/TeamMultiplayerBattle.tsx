@@ -15,11 +15,12 @@ interface Props {
 export function TeamMultiplayerBattle({ 
     battleId, 
     opponentName, 
-    playerTeam,
+    playerTeam: initialPlayerTeam,
     opponentTeam: initialOpponentTeam,
     onBattleEnd,
     onBackToLobby
 }: Props) {
+    const [playerTeam, setPlayerTeam] = useState<Character[]>(initialPlayerTeam);
     const [activeCharIndex, setActiveCharIndex] = useState(0);
     const [opponentTeam, setOpponentTeam] = useState<Character[]>(initialOpponentTeam || []);
     const [opponentActiveIndex, setOpponentActiveIndex] = useState(0);
@@ -38,19 +39,48 @@ export function TeamMultiplayerBattle({
         // In a real scenario, this should come from the server via TurnProcessed
         if (!initialOpponentTeam || initialOpponentTeam.length === 0) {
             console.warn('No opponent team provided, using placeholder data');
-            setOpponentTeam(playerTeam.map(char => ({ ...char, id: char.id + 1000 })));
+            setOpponentTeam(initialPlayerTeam.map(char => ({ ...char, id: char.id + 1000 })));
+        } else {
+            console.log('Opponent team received:', initialOpponentTeam);
+            // Log each character's imageUrl to debug
+            initialOpponentTeam.forEach((char, idx) => {
+                console.log(`Opponent char ${idx}:`, char.name, 'imageUrl:', char.imageUrl);
+            });
         }
 
         signalRService.onTurnProcessed((result: any) => {
             console.log('Team turn processed:', result);
-            console.log(setOpponentActiveIndex);
+            console.log('Received playerTeam:', result.playerTeam);
+            console.log('Received opponentTeam:', result.opponentTeam);
 
             setMessage(result.message || '');
             setBattleLog(prev => [result.message || 'Turn processed', ...prev].slice(0, 10));
 
             // Update team states from result
-            if (result.playerTeam) {
-                // playerTeam is an array - update the whole team
+            if (result.playerTeam && Array.isArray(result.playerTeam)) {
+                console.log('Updating player team:', result.playerTeam);
+                setPlayerTeam(result.playerTeam);
+
+                // Find the active character index (the one with current health > 0 and was active)
+                const activeIndex = result.playerTeam.findIndex((char: Character, idx: number) => 
+                    idx === activeCharIndex || (char.currentHealth > 0 && activeCharIndex < result.playerTeam.length)
+                );
+                if (activeIndex >= 0) {
+                    setActiveCharIndex(activeIndex);
+                }
+            }
+
+            if (result.opponentTeam && Array.isArray(result.opponentTeam)) {
+                console.log('Updating opponent team:', result.opponentTeam);
+                setOpponentTeam(result.opponentTeam);
+
+                // Find the active opponent character
+                const activeIndex = result.opponentTeam.findIndex((char: Character, idx: number) => 
+                    idx === opponentActiveIndex || (char.currentHealth > 0 && opponentActiveIndex < result.opponentTeam.length)
+                );
+                if (activeIndex >= 0) {
+                    setOpponentActiveIndex(activeIndex);
+                }
             }
 
             if (result.lastRound != null) {
@@ -61,7 +91,7 @@ export function TeamMultiplayerBattle({
             }
 
             if (result.isGameOver) {
-                const allPlayerDefeated = playerTeam.every(c => c.currentHealth <= 0);
+                const allPlayerDefeated = result.playerTeam?.every((c: Character) => c.currentHealth <= 0) ?? true;
                 const won = !allPlayerDefeated;
                 const gameOverMsg = won ? 'Victory! Your team won!' : 'Defeat! All your characters were defeated.';
                 setBattleLog(prev => [gameOverMsg, ...prev].slice(0, 10));
@@ -74,6 +104,7 @@ export function TeamMultiplayerBattle({
             setMessage('Character switched successfully!');
             setBattleLog(prev => [`You switched to ${data.newCharacterName}!`, ...prev].slice(0, 10));
             setIsProcessing(false);
+            setIsWaitingForOpponent(false); // Reset waiting state
             setShowSwitchMenu(false);
         });
 
@@ -211,29 +242,57 @@ export function TeamMultiplayerBattle({
                 <div className="team-roster opponent-roster">
                     <h3>Opponent Team</h3>
                     <div className="team-members">
-                        {opponentTeam.map((char, idx) => (
-                            <div 
-                                key={idx} 
-                                className={`team-member ${idx === opponentActiveIndex ? 'active' : ''} ${char.currentHealth <= 0 ? 'defeated' : ''}`}
-                            >
-                                <div className="member-portrait">
-                                    <img src={char.imageUrl} alt={char.name} />
-                                    {idx === opponentActiveIndex && <div className="active-badge">ACTIVE</div>}
-                                    {char.currentHealth <= 0 && <div className="defeated-overlay">K.O.</div>}
+                        {opponentTeam && opponentTeam.length > 0 ? opponentTeam.map((char, idx) => {
+                            // Debug log for each character
+                            if (!char.imageUrl) {
+                                console.warn(`Opponent character ${char.name} missing imageUrl:`, char);
+                            }
+
+                            return (
+                                <div 
+                                    key={idx} 
+                                    className={`team-member ${idx === opponentActiveIndex ? 'active' : ''} ${char.currentHealth <= 0 ? 'defeated' : ''}`}
+                                >
+                                    <div className="member-portrait">
+                                        {char.imageUrl ? (
+                                            <img 
+                                                src={char.imageUrl} 
+                                                alt={char.name} 
+                                                onError={(e) => {
+                                                    console.error('Failed to load image for', char.name, ':', char.imageUrl);
+                                                    // Replace with placeholder instead of hiding
+                                                    const target = e.currentTarget;
+                                                    target.style.display = 'none';
+                                                    if (target.parentElement) {
+                                                        const placeholder = document.createElement('div');
+                                                        placeholder.className = 'image-placeholder';
+                                                        placeholder.textContent = char.name?.charAt(0) || '?';
+                                                        target.parentElement.appendChild(placeholder);
+                                                    }
+                                                }} 
+                                            />
+                                        ) : (
+                                            <div className="image-placeholder">{char.name?.charAt(0) || '?'}</div>
+                                        )}
+                                        {idx === opponentActiveIndex && <div className="active-badge">ACTIVE</div>}
+                                        {char.currentHealth <= 0 && <div className="defeated-overlay">K.O.</div>}
+                                    </div>
+                                    <div className="member-name">{char.name}</div>
+                                    <div className="member-hp-bar">
+                                        <div 
+                                            className="hp-fill"
+                                            style={{
+                                                width: `${getHealthPercentage(char.currentHealth, char.maxHealth)}%`,
+                                                backgroundColor: getHealthColor(getHealthPercentage(char.currentHealth, char.maxHealth))
+                                            }}
+                                        />
+                                        <span className="hp-text">{char.currentHealth}/{char.maxHealth}</span>
+                                    </div>
                                 </div>
-                                <div className="member-name">{char.name}</div>
-                                <div className="member-hp-bar">
-                                    <div 
-                                        className="hp-fill"
-                                        style={{
-                                            width: `${getHealthPercentage(char.currentHealth, char.maxHealth)}%`,
-                                            backgroundColor: getHealthColor(getHealthPercentage(char.currentHealth, char.maxHealth))
-                                        }}
-                                    />
-                                    <span className="hp-text">{char.currentHealth}/{char.maxHealth}</span>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        }) : (
+                            <div className="loading-opponent">Loading opponent team...</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -253,6 +312,74 @@ export function TeamMultiplayerBattle({
                             <img src={opponentActiveChar.imageUrl} alt={opponentActiveChar.name} className="char-sprite-large" />
                             <h3>{opponentActiveChar.name}</h3>
                         </>
+                    )}
+                </div>
+            </div>
+
+            {/* Active Character Details */}
+            <div className="active-character-details">
+                <div className="player-details">
+                    <h4>Your Active Character</h4>
+                    <div className="char-detail-card">
+                        <div className="char-detail-name">{activeChar.name}</div>
+                        <div className="char-detail-hp">
+                            <span className="hp-label">HP:</span>
+                            <div className="hp-bar-detail">
+                                <div 
+                                    className="hp-fill-detail"
+                                    style={{
+                                        width: `${getHealthPercentage(activeChar.currentHealth, activeChar.maxHealth)}%`,
+                                        backgroundColor: getHealthColor(getHealthPercentage(activeChar.currentHealth, activeChar.maxHealth))
+                                    }}
+                                />
+                            </div>
+                            <span className="hp-text-detail">{activeChar.currentHealth}/{activeChar.maxHealth}</span>
+                        </div>
+                        {activeChar.activeStatusEffects && activeChar.activeStatusEffects.length > 0 && (
+                            <div className="status-effects-detail">
+                                <span className="status-label">Status:</span>
+                                <div className="status-icons">
+                                    {activeChar.activeStatusEffects.map((effect, idx) => (
+                                        <div key={idx} className="status-badge" title={effect.name}>
+                                            {effect.name} ({effect.duration})
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="opponent-details">
+                    <h4>Opponent Active Character</h4>
+                    {opponentActiveChar && (
+                        <div className="char-detail-card">
+                            <div className="char-detail-name">{opponentActiveChar.name}</div>
+                            <div className="char-detail-hp">
+                                <span className="hp-label">HP:</span>
+                                <div className="hp-bar-detail">
+                                    <div 
+                                        className="hp-fill-detail"
+                                        style={{
+                                            width: `${getHealthPercentage(opponentActiveChar.currentHealth, opponentActiveChar.maxHealth)}%`,
+                                            backgroundColor: getHealthColor(getHealthPercentage(opponentActiveChar.currentHealth, opponentActiveChar.maxHealth))
+                                        }}
+                                    />
+                                </div>
+                                <span className="hp-text-detail">{opponentActiveChar.currentHealth}/{opponentActiveChar.maxHealth}</span>
+                            </div>
+                            {opponentActiveChar.activeStatusEffects && opponentActiveChar.activeStatusEffects.length > 0 && (
+                                <div className="status-effects-detail">
+                                    <span className="status-label">Status:</span>
+                                    <div className="status-icons">
+                                        {opponentActiveChar.activeStatusEffects.map((effect, idx) => (
+                                            <div key={idx} className="status-badge" title={effect.name}>
+                                                {effect.name} ({effect.duration})
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
