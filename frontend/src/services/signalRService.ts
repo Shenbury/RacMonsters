@@ -4,29 +4,57 @@ import type { BattleState } from "../types";
 class SignalRService {
     private connection: signalR.HubConnection | null = null;
     private reconnectAttempts = 0;
-    private maxReconnectAttempts = 5;
+    private maxReconnectAttempts = 3; // Reduced from 5
+    private isConnecting = false;
 
     async connect(): Promise<void> {
+        // Prevent multiple simultaneous connection attempts
+        if (this.isConnecting) {
+            console.log("Connection attempt already in progress");
+            return;
+        }
+
+        // If already connected, return immediately
         if (this.connection?.state === signalR.HubConnectionState.Connected) {
             console.log("Already connected to SignalR");
             return;
         }
 
-        this.connection = new signalR.HubConnectionBuilder()
-            .withUrl("/gameHub")
-            .withAutomaticReconnect({
-                nextRetryDelayInMilliseconds: (retryContext) => {
-                    if (retryContext.previousRetryCount < 3) {
-                        return 2000;
-                    } else if (retryContext.previousRetryCount < 6) {
-                        return 5000;
-                    } else {
-                        return 10000;
+        // If connection exists but not connected, try to reuse it
+        if (this.connection?.state === signalR.HubConnectionState.Connecting) {
+            console.log("Connection attempt already in progress");
+            return;
+        }
+
+        // Clean up any existing connection before creating a new one
+        if (this.connection) {
+            try {
+                await this.connection.stop();
+                console.log("Cleaned up existing connection");
+            } catch (error) {
+                console.warn("Error cleaning up connection:", error);
+            }
+        }
+
+        this.isConnecting = true;
+
+        try {
+            this.connection = new signalR.HubConnectionBuilder()
+                .withUrl("/gameHub")
+                .withAutomaticReconnect({
+                    nextRetryDelayInMilliseconds: (retryContext) => {
+                        // Exponential backoff with max delay
+                        if (retryContext.previousRetryCount < 2) {
+                            return 2000;
+                        } else if (retryContext.previousRetryCount < 4) {
+                            return 5000;
+                        } else {
+                            return 10000;
+                        }
                     }
-                }
-            })
-            .configureLogging(signalR.LogLevel.Information)
-            .build();
+                })
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
 
         this.connection.onreconnecting((error) => {
             console.warn("SignalR reconnecting...", error);
@@ -40,24 +68,42 @@ class SignalRService {
 
         this.connection.onclose((error) => {
             console.error("SignalR connection closed:", error);
-            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.connection = null; // Clear the connection reference
+
+            // Only attempt auto-reconnect if under the limit and not a rate limit error
+            const is429Error = error?.message?.includes('429') || error?.message?.includes('limit');
+            if (!is429Error && this.reconnectAttempts < this.maxReconnectAttempts) {
+                console.log(`Attempting to reconnect in 5 seconds (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
                 setTimeout(() => this.connect(), 5000);
+            } else if (is429Error) {
+                console.error("Rate limit reached. Please close other tabs and wait a few minutes before trying again.");
             }
         });
 
         try {
             await this.connection.start();
             console.log("SignalR Connected successfully");
+            this.isConnecting = false;
+            this.reconnectAttempts = 0; // Reset on successful connection
         } catch (error) {
             console.error("Error connecting to SignalR:", error);
+            this.isConnecting = false;
+            this.connection = null;
             throw error;
         }
     }
 
     async disconnect(): Promise<void> {
+        this.isConnecting = false;
         if (this.connection) {
-            await this.connection.stop();
-            console.log("SignalR disconnected");
+            try {
+                await this.connection.stop();
+                this.connection = null;
+                console.log("SignalR disconnected and cleaned up");
+            } catch (error) {
+                console.error("Error disconnecting SignalR:", error);
+                this.connection = null;
+            }
         }
     }
 

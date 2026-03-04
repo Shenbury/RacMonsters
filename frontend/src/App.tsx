@@ -6,6 +6,7 @@ import { MultiplayerLobby } from './components/MultiplayerLobby'
 import { CharacterSelection } from './components/CharacterSelection'
 import { TeamCharacterSelection } from './components/TeamCharacterSelection'
 import { MultiplayerBattle } from './components/MultiplayerBattle'
+import { TeamMultiplayerBattle } from './components/TeamMultiplayerBattle'
 import type { Character as BaseCharacter, StatusEffect, StatusEffectType } from './types'
 
 // Extended types to handle both camelCase and PascalCase from API
@@ -819,6 +820,15 @@ const App: React.FC = () => {
                         selectedTeam={gameMode === 'teambattle' ? selectedTeam as BaseCharacter[] : undefined}
                         isTeamBattle={gameMode === 'teambattle'}
                         onMatchFound={(battleId, opponentName, opponentCharacterId, isMyTurn) => {
+                            console.log('Match found callback:', {
+                                battleId,
+                                opponentName,
+                                opponentCharacterId,
+                                isMyTurn,
+                                gameMode,
+                                selectedTeamLength: selectedTeam.length,
+                                hasMultiplayerChar: !!multiplayerSelectedCharacter
+                            });
                             setMultiplayerBattleId(battleId);
                             setMultiplayerOpponentName(opponentName);
                             setMultiplayerOpponentCharId(opponentCharacterId);
@@ -1032,6 +1042,33 @@ const App: React.FC = () => {
                             </ul>
                         </div>
                     </div>
+                )}
+
+                {gameState === 'multiplayerbattle' && multiplayerBattleId && gameMode === 'teambattle' && selectedTeam.length > 0 && (
+                    <TeamMultiplayerBattle
+                        battleId={multiplayerBattleId}
+                        opponentName={multiplayerOpponentName}
+                        playerTeam={selectedTeam as BaseCharacter[]}
+                        onBattleEnd={(won: boolean) => {
+                            if (won) {
+                                pushLog(`Victory! Your team defeated ${multiplayerOpponentName}!`);
+                            } else {
+                                pushLog(`Defeat! ${multiplayerOpponentName}'s team was victorious.`);
+                            }
+                            setMultiplayerBattleId(null);
+                            setMultiplayerOpponentName('');
+                            setMultiplayerOpponentCharId(null);
+                            setSelectedTeam([]);
+                            setGameState('modeselect');
+                        }}
+                        onBackToLobby={() => {
+                            setMultiplayerBattleId(null);
+                            setMultiplayerOpponentName('');
+                            setMultiplayerOpponentCharId(null);
+                            setSelectedTeam([]);
+                            setGameState('select');
+                        }}
+                    />
                 )}
 
                 {gameState === 'multiplayerbattle' && multiplayerBattleId && multiplayerSelectedCharacter && multiplayerOpponentCharId && (
