@@ -184,10 +184,10 @@ class SignalRService {
         });
     }
 
-    onMatchFound(callback: (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean) => void): void {
-        this.connection?.on("MatchFound", (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean) => {
-            console.log("Match found! Battle:", battleId, "Opponent:", opponentName, "My turn:", isMyTurn);
-            callback(battleId, opponentName, opponentCharacterId, isMyTurn);
+    onMatchFound(callback: (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean, opponentTeam?: any[]) => void): void {
+        this.connection?.on("MatchFound", (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean, opponentTeam?: any[]) => {
+            console.log("Match found! Battle:", battleId, "Opponent:", opponentName, "My turn:", isMyTurn, "Opponent team:", opponentTeam);
+            callback(battleId, opponentName, opponentCharacterId, isMyTurn, opponentTeam);
         });
     }
 

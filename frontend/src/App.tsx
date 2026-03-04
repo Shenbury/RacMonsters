@@ -102,6 +102,7 @@ const App: React.FC = () => {
     const [multiplayerBattleId, setMultiplayerBattleId] = useState<number | null>(null)
     const [multiplayerOpponentName, setMultiplayerOpponentName] = useState<string>('')
     const [multiplayerOpponentCharId, setMultiplayerOpponentCharId] = useState<number | null>(null)
+    const [multiplayerOpponentTeam, setMultiplayerOpponentTeam] = useState<Character[]>([])
     const [multiplayerIsMyTurn, setMultiplayerIsMyTurn] = useState<boolean>(false)
     const [multiplayerSelectedCharacter, setMultiplayerSelectedCharacter] = useState<Character | null>(null)
 
@@ -819,7 +820,7 @@ const App: React.FC = () => {
                         selectedCharacter={gameMode === 'teambattle' ? undefined : (multiplayerSelectedCharacter as BaseCharacter)}
                         selectedTeam={gameMode === 'teambattle' ? selectedTeam as BaseCharacter[] : undefined}
                         isTeamBattle={gameMode === 'teambattle'}
-                        onMatchFound={(battleId, opponentName, opponentCharacterId, isMyTurn) => {
+                        onMatchFound={(battleId, opponentName, opponentCharacterId, isMyTurn, opponentTeam) => {
                             console.log('Match found callback:', {
                                 battleId,
                                 opponentName,
@@ -827,11 +828,13 @@ const App: React.FC = () => {
                                 isMyTurn,
                                 gameMode,
                                 selectedTeamLength: selectedTeam.length,
-                                hasMultiplayerChar: !!multiplayerSelectedCharacter
+                                hasMultiplayerChar: !!multiplayerSelectedCharacter,
+                                opponentTeam
                             });
                             setMultiplayerBattleId(battleId);
                             setMultiplayerOpponentName(opponentName);
                             setMultiplayerOpponentCharId(opponentCharacterId);
+                            setMultiplayerOpponentTeam(opponentTeam || []);
                             setMultiplayerIsMyTurn(isMyTurn);
                             setGameState('multiplayerbattle');
                             pushLog(`Match found! You're battling ${opponentName}!`);
@@ -1049,6 +1052,7 @@ const App: React.FC = () => {
                         battleId={multiplayerBattleId}
                         opponentName={multiplayerOpponentName}
                         playerTeam={selectedTeam as BaseCharacter[]}
+                        opponentTeam={multiplayerOpponentTeam as BaseCharacter[]}
                         onBattleEnd={(won: boolean) => {
                             if (won) {
                                 pushLog(`Victory! Your team defeated ${multiplayerOpponentName}!`);
@@ -1058,6 +1062,7 @@ const App: React.FC = () => {
                             setMultiplayerBattleId(null);
                             setMultiplayerOpponentName('');
                             setMultiplayerOpponentCharId(null);
+                            setMultiplayerOpponentTeam([]);
                             setSelectedTeam([]);
                             setGameState('modeselect');
                         }}
@@ -1065,6 +1070,7 @@ const App: React.FC = () => {
                             setMultiplayerBattleId(null);
                             setMultiplayerOpponentName('');
                             setMultiplayerOpponentCharId(null);
+                            setMultiplayerOpponentTeam([]);
                             setSelectedTeam([]);
                             setGameState('select');
                         }}

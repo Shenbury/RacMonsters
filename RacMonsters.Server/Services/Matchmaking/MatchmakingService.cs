@@ -163,22 +163,49 @@ namespace RacMonsters.Server.Services.Matchmaking
                             await _hubContext.Groups.AddToGroupAsync(player1.ConnectionId, $"battle-{battleId}");
                             await _hubContext.Groups.AddToGroupAsync(player2.ConnectionId, $"battle-{battleId}");
 
-                            // Notify both players that match is found
-                            await _hubContext.Clients.Client(player1.ConnectionId).SendAsync(
-                                "MatchFound",
-                                battleId,
-                                player2.PlayerName,
-                                player2.CharacterId,
-                                true // isMyTurn
-                            );
+                            // Get the created battle to send complete team data
+                            var createdBattle = await battleService.GetBattle(battleId);
 
-                            await _hubContext.Clients.Client(player2.ConnectionId).SendAsync(
-                                "MatchFound",
-                                battleId,
-                                player1.PlayerName,
-                                player1.CharacterId,
-                                false // isMyTurn
-                            );
+                            if (player1.IsTeamBattle && createdBattle?.Mode == BattleMode.TeamBattle)
+                            {
+                                // Team Battle - send team data
+                                await _hubContext.Clients.Client(player1.ConnectionId).SendAsync(
+                                    "MatchFound",
+                                    battleId,
+                                    player2.PlayerName,
+                                    player2.CharacterId, // Keep for backward compatibility
+                                    true, // isMyTurn
+                                    createdBattle.Team2Characters // opponentTeam
+                                );
+
+                                await _hubContext.Clients.Client(player2.ConnectionId).SendAsync(
+                                    "MatchFound",
+                                    battleId,
+                                    player1.PlayerName,
+                                    player1.CharacterId, // Keep for backward compatibility
+                                    false, // isMyTurn
+                                    createdBattle.Team1Characters // opponentTeam
+                                );
+                            }
+                            else
+                            {
+                                // Standard 1v1 Battle
+                                await _hubContext.Clients.Client(player1.ConnectionId).SendAsync(
+                                    "MatchFound",
+                                    battleId,
+                                    player2.PlayerName,
+                                    player2.CharacterId,
+                                    true // isMyTurn
+                                );
+
+                                await _hubContext.Clients.Client(player2.ConnectionId).SendAsync(
+                                    "MatchFound",
+                                    battleId,
+                                    player1.PlayerName,
+                                    player1.CharacterId,
+                                    false // isMyTurn
+                                );
+                            }
 
                             _logger.LogInformation($"Battle {battleId} created successfully for {player1.PlayerName} vs {player2.PlayerName}");
                         }

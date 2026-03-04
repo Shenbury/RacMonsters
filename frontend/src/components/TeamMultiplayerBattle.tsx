@@ -7,6 +7,7 @@ interface Props {
     battleId: number;
     opponentName: string;
     playerTeam: Character[];
+    opponentTeam?: Character[];
     onBattleEnd: (won: boolean) => void;
     onBackToLobby: () => void;
 }
@@ -15,11 +16,12 @@ export function TeamMultiplayerBattle({
     battleId, 
     opponentName, 
     playerTeam,
+    opponentTeam: initialOpponentTeam,
     onBattleEnd,
     onBackToLobby
 }: Props) {
     const [activeCharIndex, setActiveCharIndex] = useState(0);
-    const [opponentTeam, setOpponentTeam] = useState<Character[]>([]);
+    const [opponentTeam, setOpponentTeam] = useState<Character[]>(initialOpponentTeam || []);
     const [opponentActiveIndex, setOpponentActiveIndex] = useState(0);
     const [selectedAbility, setSelectedAbility] = useState<number | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -32,9 +34,12 @@ export function TeamMultiplayerBattle({
     const opponentActiveChar = opponentTeam[opponentActiveIndex];
 
     useEffect(() => {
-        // Initialize opponent team (placeholder - will be filled by SignalR events)
-        // In a real implementation, this would come from the battle state
-        setOpponentTeam(playerTeam.map(char => ({ ...char, id: char.id + 1000 })));
+        // If opponent team was not provided, initialize as placeholder
+        // In a real scenario, this should come from the server via TurnProcessed
+        if (!initialOpponentTeam || initialOpponentTeam.length === 0) {
+            console.warn('No opponent team provided, using placeholder data');
+            setOpponentTeam(playerTeam.map(char => ({ ...char, id: char.id + 1000 })));
+        }
 
         signalRService.onTurnProcessed((result: any) => {
             console.log('Team turn processed:', result);

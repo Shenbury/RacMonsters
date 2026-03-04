@@ -8,7 +8,7 @@ interface Props {
     selectedCharacter?: Character;
     selectedTeam?: Character[];
     isTeamBattle?: boolean;
-    onMatchFound: (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean) => void;
+    onMatchFound: (battleId: number, opponentName: string, opponentCharacterId: number, isMyTurn: boolean, opponentTeam?: Character[]) => void;
     onBack: () => void;
 }
 
@@ -37,9 +37,9 @@ export function MultiplayerLobby({
                     setQueueSize(size);
                 });
 
-                signalRService.onMatchFound((battleId, opponentName, opponentCharacterId, isMyTurn) => {
+                signalRService.onMatchFound((battleId, opponentName, opponentCharacterId, isMyTurn, opponentTeam) => {
                     setIsSearching(false);
-                    onMatchFound(battleId, opponentName, opponentCharacterId, isMyTurn);
+                    onMatchFound(battleId, opponentName, opponentCharacterId, isMyTurn, opponentTeam);
                 });
 
                 signalRService.onMatchmakingError((error) => {
