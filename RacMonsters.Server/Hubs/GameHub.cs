@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using RacMonsters.Server.Models;
 using RacMonsters.Server.Services.Battles;
 using RacMonsters.Server.Services.Matchmaking;
 
@@ -59,58 +60,131 @@ namespace RacMonsters.Server.Hubs
                 {
                     // Round was processed - send result to both players with correct character perspectives
 
-                    // Player 1 perspective
-                    var player1Result = new 
+                    // Check if this is a team battle
+                    if (battle.Mode == BattleMode.TeamBattle)
                     {
-                        battleId = result.BattleId,
-                        playerCharacter = result.PlayerCharacter, // This is always CharacterA (Player 1's character)
-                        opponentCharacter = result.OpponentCharacter, // This is always CharacterB (Player 2's character)
-                        lastRound = result.LastRound,
-                        isGameOver = result.IsGameOver,
-                        winner = result.Winner,
-                        message = result.Message,
-                        triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
-                        triggeringPlayerName = result.TriggeringPlayerName
-                    };
+                        // Team Battle - include team data
+                        // Player 1 perspective
+                        var player1Result = new 
+                        {
+                            battleId = result.BattleId,
+                            playerCharacter = battle.GetActiveTeam1Character(),
+                            opponentCharacter = battle.GetActiveTeam2Character(),
+                            playerTeam = battle.Team1Characters,
+                            opponentTeam = battle.Team2Characters,
+                            playerActiveIndex = battle.ActiveTeam1CharacterIndex,
+                            opponentActiveIndex = battle.ActiveTeam2CharacterIndex,
+                            lastRound = result.LastRound,
+                            isGameOver = result.IsGameOver,
+                            winner = result.Winner,
+                            message = result.Message,
+                            triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                            triggeringPlayerName = result.TriggeringPlayerName
+                        };
 
-                    // Player 2 perspective (swap the characters)
-                    var player2Result = new 
+                        // Player 2 perspective
+                        var player2Result = new 
+                        {
+                            battleId = result.BattleId,
+                            playerCharacter = battle.GetActiveTeam2Character(),
+                            opponentCharacter = battle.GetActiveTeam1Character(),
+                            playerTeam = battle.Team2Characters,
+                            opponentTeam = battle.Team1Characters,
+                            playerActiveIndex = battle.ActiveTeam2CharacterIndex,
+                            opponentActiveIndex = battle.ActiveTeam1CharacterIndex,
+                            lastRound = result.LastRound,
+                            isGameOver = result.IsGameOver,
+                            winner = result.Winner,
+                            message = result.Message,
+                            triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                            triggeringPlayerName = result.TriggeringPlayerName
+                        };
+
+                        // Send to Player 1
+                        await Clients.Client(battle.Player1ConnectionId!).SendAsync("TurnProcessed", player1Result);
+
+                        // Send to Player 2
+                        await Clients.Client(battle.Player2ConnectionId!).SendAsync("TurnProcessed", player2Result);
+                    }
+                    else
                     {
-                        battleId = result.BattleId,
-                        playerCharacter = result.OpponentCharacter, // For Player 2, their character is CharacterB
-                        opponentCharacter = result.PlayerCharacter, // For Player 2, opponent is CharacterA
-                        lastRound = result.LastRound,
-                        isGameOver = result.IsGameOver,
-                        winner = result.Winner,
-                        message = result.Message,
-                        triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
-                        triggeringPlayerName = result.TriggeringPlayerName
-                    };
+                        // Standard 1v1 Battle
+                        // Player 1 perspective
+                        var player1Result = new 
+                        {
+                            battleId = result.BattleId,
+                            playerCharacter = result.PlayerCharacter, // This is always CharacterA (Player 1's character)
+                            opponentCharacter = result.OpponentCharacter, // This is always CharacterB (Player 2's character)
+                            lastRound = result.LastRound,
+                            isGameOver = result.IsGameOver,
+                            winner = result.Winner,
+                            message = result.Message,
+                            triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                            triggeringPlayerName = result.TriggeringPlayerName
+                        };
 
-                    // Send to Player 1
-                    await Clients.Client(battle.Player1ConnectionId!).SendAsync("TurnProcessed", player1Result);
+                        // Player 2 perspective (swap the characters)
+                        var player2Result = new 
+                        {
+                            battleId = result.BattleId,
+                            playerCharacter = result.OpponentCharacter, // For Player 2, their character is CharacterB
+                            opponentCharacter = result.PlayerCharacter, // For Player 2, opponent is CharacterA
+                            lastRound = result.LastRound,
+                            isGameOver = result.IsGameOver,
+                            winner = result.Winner,
+                            message = result.Message,
+                            triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                            triggeringPlayerName = result.TriggeringPlayerName
+                        };
 
-                    // Send to Player 2
-                    await Clients.Client(battle.Player2ConnectionId!).SendAsync("TurnProcessed", player2Result);
+                        // Send to Player 1
+                        await Clients.Client(battle.Player1ConnectionId!).SendAsync("TurnProcessed", player1Result);
+
+                        // Send to Player 2
+                        await Clients.Client(battle.Player2ConnectionId!).SendAsync("TurnProcessed", player2Result);
+                    }
                 }
                 else
                 {
                     // Only one player has selected - acknowledge to the caller and notify opponent
                     var isPlayer1 = connectionId == battle.Player1ConnectionId;
 
-                    // Send acknowledgement to the player who just selected
-                    await Clients.Caller.SendAsync("TurnProcessed", new 
+                    if (battle.Mode == BattleMode.TeamBattle)
                     {
-                        battleId = result.BattleId,
-                        playerCharacter = result.PlayerCharacter,
-                        opponentCharacter = result.OpponentCharacter,
-                        lastRound = result.LastRound,
-                        isGameOver = result.IsGameOver,
-                        winner = result.Winner,
-                        message = result.Message,
-                        triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
-                        triggeringPlayerName = result.TriggeringPlayerName
-                    });
+                        // Team Battle - include team data in waiting state
+                        await Clients.Caller.SendAsync("TurnProcessed", new 
+                        {
+                            battleId = result.BattleId,
+                            playerCharacter = isPlayer1 ? battle.GetActiveTeam1Character() : battle.GetActiveTeam2Character(),
+                            opponentCharacter = isPlayer1 ? battle.GetActiveTeam2Character() : battle.GetActiveTeam1Character(),
+                            playerTeam = isPlayer1 ? battle.Team1Characters : battle.Team2Characters,
+                            opponentTeam = isPlayer1 ? battle.Team2Characters : battle.Team1Characters,
+                            playerActiveIndex = isPlayer1 ? battle.ActiveTeam1CharacterIndex : battle.ActiveTeam2CharacterIndex,
+                            opponentActiveIndex = isPlayer1 ? battle.ActiveTeam2CharacterIndex : battle.ActiveTeam1CharacterIndex,
+                            lastRound = result.LastRound,
+                            isGameOver = result.IsGameOver,
+                            winner = result.Winner,
+                            message = result.Message,
+                            triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                            triggeringPlayerName = result.TriggeringPlayerName
+                        });
+                    }
+                    else
+                    {
+                        // Standard 1v1 Battle
+                        await Clients.Caller.SendAsync("TurnProcessed", new 
+                        {
+                            battleId = result.BattleId,
+                            playerCharacter = result.PlayerCharacter,
+                            opponentCharacter = result.OpponentCharacter,
+                            lastRound = result.LastRound,
+                            isGameOver = result.IsGameOver,
+                            winner = result.Winner,
+                            message = result.Message,
+                            triggeringPlayerConnectionId = result.TriggeringPlayerConnectionId,
+                            triggeringPlayerName = result.TriggeringPlayerName
+                        });
+                    }
 
                     // Notify the opponent that the other player is waiting
                     var opponentConnectionId = isPlayer1 ? battle.Player2ConnectionId : battle.Player1ConnectionId;

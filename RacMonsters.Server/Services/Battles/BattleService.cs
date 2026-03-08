@@ -119,13 +119,34 @@ namespace RacMonsters.Server.Services.Battles
             if (battle.Player1Ready && battle.Player2Ready)
             {
                 // Both players have selected, process the round
-                return await ProcessSimultaneousRound(battle, connectionId);
+                // Use appropriate method based on battle mode
+                if (battle.Mode == BattleMode.TeamBattle)
+                {
+                    return await ProcessTeamBattleRound(battle, connectionId);
+                }
+                else
+                {
+                    return await ProcessSimultaneousRound(battle, connectionId);
+                }
             }
             else
             {
                 // Return a waiting state
-                var activeCharacter = isPlayer1 ? battle.CharacterA : battle.CharacterB;
-                var opponentCharacter = isPlayer1 ? battle.CharacterB : battle.CharacterA;
+                Character activeCharacter;
+                Character opponentCharacter;
+
+                if (battle.Mode == BattleMode.TeamBattle)
+                {
+                    // Team battle - use active team characters
+                    activeCharacter = isPlayer1 ? battle.GetActiveTeam1Character() : battle.GetActiveTeam2Character();
+                    opponentCharacter = isPlayer1 ? battle.GetActiveTeam2Character() : battle.GetActiveTeam1Character();
+                }
+                else
+                {
+                    // Standard 1v1 battle
+                    activeCharacter = isPlayer1 ? battle.CharacterA : battle.CharacterB;
+                    opponentCharacter = isPlayer1 ? battle.CharacterB : battle.CharacterA;
+                }
 
                 return new BattleResult
                 {
@@ -686,6 +707,38 @@ namespace RacMonsters.Server.Services.Battles
                     var message = StatusEffectProcessor.FormatAbilityResult(player1Character, player1Ability, player2Character, result.damage, result.heal, result.hit);
                     resultMessages.Add(message);
                     statusMessages.AddRange(result.statusMessages);
+
+                    // Create round record
+                    var round = new Round
+                    {
+                        PlayerA = new RoundAction
+                        {
+                            Type = ActionType.Ability,
+                            Character = player1Character,
+                            Ability = player1Ability,
+                            Hit = result.hit,
+                            ResultMessage = message,
+                            Damage = result.damage,
+                            HealAmount = result.heal,
+                            StatusEffectMessages = result.statusMessages
+                        },
+                        PlayerB = new RoundAction
+                        {
+                            Type = ActionType.Switch,
+                            Character = player2Character,
+                            Ability = null,
+                            Hit = false,
+                            ResultMessage = $"{player2Character.Name} switched in!",
+                            Damage = 0,
+                            HealAmount = 0,
+                            StatusEffectMessages = new List<string>()
+                        }
+                    };
+
+                    // Add round to battle
+                    var rounds = battle.Rounds.ToList();
+                    rounds.Add(round);
+                    battle.Rounds = rounds.ToArray();
                 }
                 else if (player2Ability != null)
                 {
@@ -696,11 +749,75 @@ namespace RacMonsters.Server.Services.Battles
                     var message = StatusEffectProcessor.FormatAbilityResult(player2Character, player2Ability, player1Character, result.damage, result.heal, result.hit);
                     resultMessages.Add(message);
                     statusMessages.AddRange(result.statusMessages);
+
+                    // Create round record
+                    var round = new Round
+                    {
+                        PlayerA = new RoundAction
+                        {
+                            Type = ActionType.Switch,
+                            Character = player1Character,
+                            Ability = null,
+                            Hit = false,
+                            ResultMessage = $"{player1Character.Name} switched in!",
+                            Damage = 0,
+                            HealAmount = 0,
+                            StatusEffectMessages = new List<string>()
+                        },
+                        PlayerB = new RoundAction
+                        {
+                            Type = ActionType.Ability,
+                            Character = player2Character,
+                            Ability = player2Ability,
+                            Hit = result.hit,
+                            ResultMessage = message,
+                            Damage = result.damage,
+                            HealAmount = result.heal,
+                            StatusEffectMessages = result.statusMessages
+                        }
+                    };
+
+                    // Add round to battle
+                    var rounds = battle.Rounds.ToList();
+                    rounds.Add(round);
+                    battle.Rounds = rounds.ToArray();
                 }
                 else
                 {
                     // Both players switched
                     resultMessages.Add($"{player1Character.Name} and {player2Character.Name} switched in!");
+
+                    // Create round record
+                    var round = new Round
+                    {
+                        PlayerA = new RoundAction
+                        {
+                            Type = ActionType.Switch,
+                            Character = player1Character,
+                            Ability = null,
+                            Hit = false,
+                            ResultMessage = $"{player1Character.Name} switched in!",
+                            Damage = 0,
+                            HealAmount = 0,
+                            StatusEffectMessages = new List<string>()
+                        },
+                        PlayerB = new RoundAction
+                        {
+                            Type = ActionType.Switch,
+                            Character = player2Character,
+                            Ability = null,
+                            Hit = false,
+                            ResultMessage = $"{player2Character.Name} switched in!",
+                            Damage = 0,
+                            HealAmount = 0,
+                            StatusEffectMessages = new List<string>()
+                        }
+                    };
+
+                    // Add round to battle
+                    var rounds = battle.Rounds.ToList();
+                    rounds.Add(round);
+                    battle.Rounds = rounds.ToArray();
                 }
 
                 // Process end-of-turn effects (decrement durations, remove expired effects)

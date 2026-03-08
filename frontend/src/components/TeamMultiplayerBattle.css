@@ -353,6 +353,18 @@
     justify-content: space-between;
     font-size: 0.9rem;
     color: #aaa;
+    margin-bottom: 8px;
+}
+
+.ability-description {
+    font-size: 0.85rem;
+    color: #ccc;
+    font-style: italic;
+    line-height: 1.3;
+    text-align: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Switch Panel */

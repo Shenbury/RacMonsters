@@ -467,6 +467,7 @@ export function TeamMultiplayerBattle({
                                         <span>SPD: {ability.speed}</span>
                                         <span>ACC: {(ability.accuracy * 100).toFixed(0)}%</span>
                                     </div>
+                                    <div className="ability-description">{ability.description}</div>
                                 </button>
                             ))}
                         </div>
