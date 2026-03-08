@@ -268,6 +268,43 @@ export function TeamMultiplayerBattle({
                                     />
                                     <span className="hp-text">{char.currentHealth}/{char.maxHealth}</span>
                                 </div>
+
+                                {/* Hover Tooltip */}
+                                <div className="member-tooltip">
+                                    <div className="tooltip-header">
+                                        <h4>{char.name}</h4>
+                                    </div>
+                                    <div className="tooltip-stats">
+                                        <div className="stat-row">
+                                            <span className="stat-label">⚔️ Attack:</span>
+                                            <span className="stat-value">{char.attack}</span>
+                                        </div>
+                                        <div className="stat-row">
+                                            <span className="stat-label">🛡️ Defense:</span>
+                                            <span className="stat-value">{char.defense}</span>
+                                        </div>
+                                        <div className="stat-row">
+                                            <span className="stat-label">⚡ Tech Attack:</span>
+                                            <span className="stat-value">{char.techAttack}</span>
+                                        </div>
+                                        <div className="stat-row">
+                                            <span className="stat-label">✨ Tech Defense:</span>
+                                            <span className="stat-value">{char.techDefense}</span>
+                                        </div>
+                                    </div>
+                                    <div className="tooltip-abilities">
+                                        <h5>Abilities:</h5>
+                                        {char.abilities.map((ability, abilityIdx) => (
+                                            <div key={abilityIdx} className="tooltip-ability">
+                                                <div className="tooltip-ability-name">{ability.name}</div>
+                                                <div className="tooltip-ability-stats">
+                                                    PWR: {ability.power} | SPD: {ability.speed} | ACC: {(ability.accuracy * 100).toFixed(0)}%
+                                                </div>
+                                                <div className="tooltip-ability-desc">{ability.description}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
