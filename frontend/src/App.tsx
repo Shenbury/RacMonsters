@@ -1051,6 +1051,7 @@ const App: React.FC = () => {
                 {gameState === 'multiplayerbattle' && multiplayerBattleId && gameMode === 'teambattle' && selectedTeam.length > 0 && (
                     <TeamMultiplayerBattle
                         battleId={multiplayerBattleId}
+                        playerName={playerName}
                         opponentName={multiplayerOpponentName}
                         playerTeam={selectedTeam as BaseCharacter[]}
                         opponentTeam={multiplayerOpponentTeam as BaseCharacter[]}
