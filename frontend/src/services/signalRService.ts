@@ -6,6 +6,7 @@ class SignalRService {
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 3; // Reduced from 5
     private isConnecting = false;
+    private reconnectTimeout: NodeJS.Timeout | null = null;
 
     async connect(): Promise<void> {
         // Prevent multiple simultaneous connection attempts
@@ -64,17 +65,32 @@ class SignalRService {
             this.connection.onreconnected((connectionId) => {
                 console.log("SignalR reconnected:", connectionId);
                 this.reconnectAttempts = 0;
+
+                // Clear any pending reconnect timeout
+                if (this.reconnectTimeout) {
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
+                }
             });
 
             this.connection.onclose((error) => {
                 console.error("SignalR connection closed:", error);
                 this.connection = null; // Clear the connection reference
 
+                // Clear any existing reconnect timeout
+                if (this.reconnectTimeout) {
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
+                }
+
                 // Only attempt auto-reconnect if under the limit and not a rate limit error
                 const is429Error = error?.message?.includes('429') || error?.message?.includes('limit');
                 if (!is429Error && this.reconnectAttempts < this.maxReconnectAttempts) {
                     console.log(`Attempting to reconnect in 5 seconds (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-                    setTimeout(() => this.connect(), 5000);
+                    this.reconnectTimeout = setTimeout(() => {
+                        this.reconnectTimeout = null;
+                        this.connect();
+                    }, 5000);
                 } else if (is429Error) {
                     console.error("Rate limit reached. Please close other tabs and wait a few minutes before trying again.");
                 }
@@ -94,6 +110,13 @@ class SignalRService {
 
     async disconnect(): Promise<void> {
         this.isConnecting = false;
+
+        // Clear any pending reconnect attempts
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+        }
+
         if (this.connection) {
             try {
                 await this.connection.stop();

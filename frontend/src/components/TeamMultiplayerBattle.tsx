@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signalRService } from '../services/signalRService';
 import type { Character } from '../types';
 import './TeamMultiplayerBattle.css';
@@ -32,6 +32,10 @@ export function TeamMultiplayerBattle({
     const [message, setMessage] = useState<string>('');
     const [battleLog, setBattleLog] = useState<string[]>(['Team battle started!']);
     const [showSwitchMenu, setShowSwitchMenu] = useState(false);
+
+    // Track mounted state and timeouts to prevent memory leaks
+    const mountedRef = useRef(true);
+    const gameOverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         // If opponent team was not provided, initialize as placeholder
@@ -112,7 +116,17 @@ export function TeamMultiplayerBattle({
                     console.error('Error leaving battle:', err);
                 });
 
-                setTimeout(() => onBattleEnd(won), 3000);
+                // Clear any existing timeout before setting new one
+                if (gameOverTimeoutRef.current) {
+                    clearTimeout(gameOverTimeoutRef.current);
+                }
+
+                // Only call onBattleEnd if component is still mounted
+                gameOverTimeoutRef.current = setTimeout(() => {
+                    if (mountedRef.current) {
+                        onBattleEnd(won);
+                    }
+                }, 3000);
             }
         });
 
@@ -152,11 +166,26 @@ export function TeamMultiplayerBattle({
         });
 
         return () => {
+            // Mark component as unmounted
+            mountedRef.current = false;
+
+            // Clear any pending timeouts
+            if (gameOverTimeoutRef.current) {
+                clearTimeout(gameOverTimeoutRef.current);
+                gameOverTimeoutRef.current = null;
+            }
+
+            // Clean up SignalR event listeners
             signalRService.offTurnProcessed();
             signalRService.offCharacterSwitched();
             signalRService.offOpponentSwitched();
             signalRService.offOpponentReady();
             signalRService.offError();
+
+            // Leave battle on unmount if still in one
+            signalRService.leaveBattle(battleId).catch(err => {
+                console.error('Error leaving battle on unmount:', err);
+            });
         };
     }, [battleId, playerTeam, onBattleEnd]);
 

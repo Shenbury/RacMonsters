@@ -6,27 +6,42 @@ namespace RacMonsters.Server.Repositories.Battles
     {
         private static readonly List<Battle> _battles = new();
         private static int _nextId = 1;
+        private static readonly object _lock = new();
+        private const int MaxCompletedBattlesToKeep = 100; // Keep last 100 completed battles
 
         public async Task<Battle> CreateBattle(Battle createBattle)
         {
-            createBattle.Id = _nextId++;
-            _battles.Add(createBattle);
+            lock (_lock)
+            {
+                createBattle.Id = _nextId++;
+                _battles.Add(createBattle);
+
+                // Clean up old completed battles to prevent memory leak
+                CleanupCompletedBattles();
+            }
             return await Task.FromResult(createBattle);
         }
 
         public async Task<Battle> GetBattle(int battleId)
         {
-            var b = _battles.FirstOrDefault(x => x.Id == battleId);
+            Battle? b;
+            lock (_lock)
+            {
+                b = _battles.FirstOrDefault(x => x.Id == battleId);
+            }
             return await Task.FromResult(b!);
         }
 
         public async Task<Battle> UpdateBattle(Battle battle)
         {
-            var existing = _battles.FirstOrDefault(x => x.Id == battle.Id);
-            if (existing != null)
+            lock (_lock)
             {
-                var index = _battles.IndexOf(existing);
-                _battles[index] = battle;
+                var existing = _battles.FirstOrDefault(x => x.Id == battle.Id);
+                if (existing != null)
+                {
+                    var index = _battles.IndexOf(existing);
+                    _battles[index] = battle;
+                }
             }
             return await Task.FromResult(battle);
         }
@@ -34,14 +49,37 @@ namespace RacMonsters.Server.Repositories.Battles
         public async Task<List<Battle>> GetBattlesWithExpiredTurns()
         {
             var now = DateTime.UtcNow;
-            var expiredBattles = _battles.Where(b => 
-                b.IsMultiplayer && 
-                b.WinningCharacter == null && 
-                b.TurnStartTime.HasValue &&
-                (now - b.TurnStartTime.Value).TotalSeconds > b.TurnTimeoutSeconds
-            ).ToList();
+            List<Battle> expiredBattles;
+
+            lock (_lock)
+            {
+                expiredBattles = _battles.Where(b => 
+                    b.IsMultiplayer && 
+                    b.WinningCharacter == null && 
+                    b.TurnStartTime.HasValue &&
+                    (now - b.TurnStartTime.Value).TotalSeconds > b.TurnTimeoutSeconds
+                ).ToList();
+            }
 
             return await Task.FromResult(expiredBattles);
+        }
+
+        private void CleanupCompletedBattles()
+        {
+            // Must be called within lock
+            var completedBattles = _battles
+                .Where(b => b.WinningCharacter != null || b.IsMultiplayer && !string.IsNullOrEmpty(b.Player1ConnectionId))
+                .OrderByDescending(b => b.Id)
+                .Skip(MaxCompletedBattlesToKeep)
+                .ToList();
+
+            if (completedBattles.Count > 0)
+            {
+                foreach (var battle in completedBattles)
+                {
+                    _battles.Remove(battle);
+                }
+            }
         }
     }
 }

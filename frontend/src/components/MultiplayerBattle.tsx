@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signalRService } from '../services/signalRService';
 import type { BattleState, Character, StatusEffect, StatusEffectType } from '../types';
 import './MultiplayerBattle.css';
@@ -31,12 +31,26 @@ export function MultiplayerBattle({
     const [playerChar, setPlayerChar] = useState<Character>(playerCharacter);
     const [battleLog, setBattleLog] = useState<string[]>(['Battle started!']);
 
+    // Track mounted state and timeouts to prevent memory leaks
+    const mountedRef = useRef(true);
+    const gameOverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
+        const abortController = new AbortController();
+
         // Fetch opponent character data
-        fetch(`/api/characters/${opponentCharacterId}`)
+        fetch(`/api/characters/${opponentCharacterId}`, { signal: abortController.signal })
             .then(res => res.json())
-            .then(data => setOpponentChar(data))
-            .catch(err => console.error('Error fetching opponent character:', err));
+            .then(data => {
+                if (mountedRef.current) {
+                    setOpponentChar(data);
+                }
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    console.error('Error fetching opponent character:', err);
+                }
+            });
 
         signalRService.onTurnProcessed((result: BattleState) => {
             console.log('Turn processed result:', result);
@@ -70,7 +84,17 @@ export function MultiplayerBattle({
                     console.error('Error leaving battle:', err);
                 });
 
-                setTimeout(() => onBattleEnd(won), 3000);
+                // Clear any existing timeout before setting new one
+                if (gameOverTimeoutRef.current) {
+                    clearTimeout(gameOverTimeoutRef.current);
+                }
+
+                // Only call onBattleEnd if component is still mounted
+                gameOverTimeoutRef.current = setTimeout(() => {
+                    if (mountedRef.current) {
+                        onBattleEnd(won);
+                    }
+                }, 3000);
             }
         });
 
@@ -94,10 +118,28 @@ export function MultiplayerBattle({
         });
 
         return () => {
+            // Mark component as unmounted
+            mountedRef.current = false;
+
+            // Abort pending fetch requests
+            abortController.abort();
+
+            // Clear any pending timeouts
+            if (gameOverTimeoutRef.current) {
+                clearTimeout(gameOverTimeoutRef.current);
+                gameOverTimeoutRef.current = null;
+            }
+
+            // Clean up SignalR event listeners
             signalRService.offTurnProcessed();
             signalRService.offOpponentReady();
             signalRService.offTurnTimeout();
             signalRService.offError();
+
+            // Leave battle on unmount if still in one
+            signalRService.leaveBattle(battleId).catch(err => {
+                console.error('Error leaving battle on unmount:', err);
+            });
         };
     }, [battleId, opponentCharacterId, onBattleEnd, playerCharacter.id]);
 

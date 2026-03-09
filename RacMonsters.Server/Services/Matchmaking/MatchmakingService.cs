@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace RacMonsters.Server.Services.Matchmaking
 {
-    public class MatchmakingService : IMatchmakingService
+    public class MatchmakingService : IMatchmakingService, IDisposable
     {
         private readonly ConcurrentQueue<MatchmakingPlayer> _standardQueue = new();
         private readonly ConcurrentQueue<MatchmakingPlayer> _teamQueue = new();
@@ -338,6 +338,11 @@ namespace RacMonsters.Server.Services.Matchmaking
             _playerLookup.Clear();
 
             await Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            _matchmakingSemaphore?.Dispose();
         }
     }
 }

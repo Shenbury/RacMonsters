@@ -181,7 +181,7 @@ namespace RacMonsters.Server.Data
                 }
                 finally
                 {
-
+                    await _db.Database.CloseConnectionAsync();
                 }
             }
 
@@ -222,7 +222,7 @@ namespace RacMonsters.Server.Data
                 }
                 finally
                 {
-
+                    await _db.Database.CloseConnectionAsync();
                 }
 
                 var mappings = new[]
