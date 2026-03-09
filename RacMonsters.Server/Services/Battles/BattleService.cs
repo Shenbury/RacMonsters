@@ -827,6 +827,39 @@ namespace RacMonsters.Server.Services.Battles
                 resultMessages.AddRange(statusMessages);
             }
 
+            // Handle character knockouts - auto-switch to next available character
+            if (player1Character.IsKnockedOut && !battle.IsTeam1Defeated())
+            {
+                // Player 1's active character died, switch to next available
+                var nextIndex = battle.Team1Characters!
+                    .Select((c, idx) => new { Character = c, Index = idx })
+                    .FirstOrDefault(x => !x.Character.IsKnockedOut && x.Index != battle.ActiveTeam1CharacterIndex);
+
+                if (nextIndex != null)
+                {
+                    battle.ActiveTeam1CharacterIndex = nextIndex.Index;
+                    battle.CharacterA = nextIndex.Character;
+                    resultMessages.Add($"{nextIndex.Character.Name} was automatically sent out!");
+                    _logger.LogInformation($"Team battle {battle.Id}: Player 1's {player1Character.Name} knocked out, auto-switching to {nextIndex.Character.Name}");
+                }
+            }
+
+            if (player2Character.IsKnockedOut && !battle.IsTeam2Defeated())
+            {
+                // Player 2's active character died, switch to next available
+                var nextIndex = battle.Team2Characters!
+                    .Select((c, idx) => new { Character = c, Index = idx })
+                    .FirstOrDefault(x => !x.Character.IsKnockedOut && x.Index != battle.ActiveTeam2CharacterIndex);
+
+                if (nextIndex != null)
+                {
+                    battle.ActiveTeam2CharacterIndex = nextIndex.Index;
+                    battle.CharacterB = nextIndex.Character;
+                    resultMessages.Add($"{nextIndex.Character.Name} was automatically sent out!");
+                    _logger.LogInformation($"Team battle {battle.Id}: Player 2's {player2Character.Name} knocked out, auto-switching to {nextIndex.Character.Name}");
+                }
+            }
+
             // Check if entire team is defeated
             bool battleOver = battle.IsTeam1Defeated() || battle.IsTeam2Defeated();
             string? winner = null;
@@ -834,7 +867,9 @@ namespace RacMonsters.Server.Services.Battles
             if (battleOver)
             {
                 var winningTeam = battle.IsTeam1Defeated() ? "player2" : "player1";
-                var winningCharacter = battle.IsTeam1Defeated() ? player2Character : player1Character;
+                var winningCharacter = battle.IsTeam1Defeated() 
+                    ? battle.GetActiveTeam2Character() 
+                    : battle.GetActiveTeam1Character();
                 battle.WinningCharacter = winningCharacter.Name;
                 winner = winningTeam;
                 _logger.LogInformation($"Team battle {battle.Id} ended. Winner: Team {winner}");
@@ -850,6 +885,10 @@ namespace RacMonsters.Server.Services.Battles
             // Update battle
             await _battleRepository.UpdateBattle(battle);
 
+            // Get the current active characters (may have been auto-switched)
+            var currentPlayer1Character = battle.GetActiveTeam1Character();
+            var currentPlayer2Character = battle.GetActiveTeam2Character();
+
             // Determine triggering player info
             string? triggeringPlayerName = null;
             Character? triggeringPlayerCharacter = null;
@@ -857,15 +896,15 @@ namespace RacMonsters.Server.Services.Battles
             if (triggeringConnectionId != null)
             {
                 var isTriggeringPlayer1 = triggeringConnectionId == battle.Player1ConnectionId;
-                triggeringPlayerName = isTriggeringPlayer1 ? player1Character.Name : player2Character.Name;
-                triggeringPlayerCharacter = isTriggeringPlayer1 ? player1Character : player2Character;
+                triggeringPlayerName = isTriggeringPlayer1 ? currentPlayer1Character.Name : currentPlayer2Character.Name;
+                triggeringPlayerCharacter = isTriggeringPlayer1 ? currentPlayer1Character : currentPlayer2Character;
             }
 
             return new BattleResult
             {
                 BattleId = battle.Id,
-                PlayerCharacter = player1Character,
-                OpponentCharacter = player2Character,
+                PlayerCharacter = currentPlayer1Character,
+                OpponentCharacter = currentPlayer2Character,
                 LastRound = battle.Rounds.LastOrDefault(),
                 IsGameOver = battleOver,
                 Winner = winner,
